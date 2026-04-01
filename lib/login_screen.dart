@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
+
 import 'register_screen.dart';
 import 'forgot_pass_screen.dart';
+import 'language_provider.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
@@ -21,8 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
         password: passwordController.text.trim(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Đăng nhập thành công")),
+      // 👉 chuyển sang Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -48,8 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Đăng nhập Google thành công")),
+      // 👉 chuyển sang Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,41 +69,67 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context);
+
     return Scaffold(
-      appBar: AppBar(title: Text("Đăng nhập")),
+      appBar: AppBar(title: Text(lang.getText("login"))),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // EMAIL
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: "Email"),
+            // 🌐 ĐỔI NGÔN NGỮ
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => lang.changeLanguage("vi"),
+                  child: const Text("VI"),
+                ),
+                TextButton(
+                  onPressed: () => lang.changeLanguage("en"),
+                  child: const Text("EN"),
+                ),
+              ],
             ),
 
-            // PASSWORD
+            // 📧 EMAIL
+            TextField(
+              controller: emailController,
+              decoration:
+              InputDecoration(labelText: lang.getText("email")),
+            ),
+
+            // 🔑 PASSWORD
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(labelText: "Mật khẩu"),
+              decoration:
+              InputDecoration(labelText: lang.getText("password")),
               obscureText: true,
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // LOGIN BUTTON
+            // 🔐 LOGIN
             ElevatedButton(
               onPressed: login,
-              child: Text("Đăng nhập"),
+              child: Text(lang.getText("login")),
             ),
 
-            // GOOGLE LOGIN
+            // 🌐 GOOGLE LOGIN
             ElevatedButton(
               onPressed: signInWithGoogle,
-              child: Text("Đăng nhập bằng Google"),
+              child: Text(lang.getText("google")),
             ),
 
-            // FORGOT PASSWORD
+            // 🔁 FORGOT PASSWORD
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -102,10 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       builder: (context) => ForgotPasswordScreen()),
                 );
               },
-              child: Text("Quên mật khẩu?"),
+              child: Text(lang.getText("forgot")),
             ),
 
-            // REGISTER
+            // 📝 REGISTER
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -114,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       builder: (context) => RegisterScreen()),
                 );
               },
-              child: Text("Chưa có tài khoản? Đăng ký"),
+              child: Text(lang.getText("register")),
             ),
           ],
         ),

@@ -1,16 +1,20 @@
-import 'package:doanltdd/firebase_options.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
 import 'login_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+
+  final langProvider = LanguageProvider();
+  await langProvider.loadLanguage();
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => langProvider,
+      child: MyApp(),
+    ),
   );
-
-  print("Kết nối Firebase thành công!");
-
-  runApp(MyApp()); // QUAN TRỌNG
 }
 
 class MyApp extends StatelessWidget {
