@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'language_provider.dart';
-import 'login_screen.dart';
-
+import 'Controllers/language_provider.dart';
+import 'Views/login_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp();
   final langProvider = LanguageProvider();
   await langProvider.loadLanguage();
 

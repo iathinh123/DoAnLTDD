@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'currency_service.dart';
+import '../Controllers/currency_service.dart';
 
 class CurrencyScreen extends StatefulWidget {
   @override
