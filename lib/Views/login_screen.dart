@@ -8,6 +8,8 @@ import 'forgot_pass_screen.dart';
 import '../Controllers/language_provider.dart';
 import 'home_screen.dart';
 
+const Color moneyLoverGreen = Color(0xFF2DB15D);
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -34,24 +35,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future login() async {
     final lang = Provider.of<LanguageProvider>(context, listen: false);
-
     if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
       _showError(lang.getText("err_empty_field"));
       return;
     }
-
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
     } on FirebaseAuthException catch (e) {
-
       _showError(lang.getText("err_invalid_login"));
     } catch (e) {
       _showError("Lỗi hệ thống: $e");
@@ -87,121 +82,81 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 25),
           child: Column(
             children: [
-
-              Align(
-                alignment: Alignment.topRight,
-                child: PopupMenuButton<String>(
-                  color: const Color(0xFF1E1E1E),
-                  onSelected: (value) => lang.changeLanguage(value),
-                  icon: const Icon(Icons.language, color: Colors.greenAccent),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: "vi", child: Text("Tiếng Việt", style: TextStyle(color: Colors.white))),
-                    const PopupMenuItem(value: "en", child: Text("English", style: TextStyle(color: Colors.white))),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: size.height * 0.05),
-
-
-              const Icon(Icons.account_balance_wallet_rounded, size: 80, color: Colors.greenAccent),
+              SizedBox(height: size.height * 0.1),
+              const Icon(Icons.account_balance_wallet_rounded, size: 80, color: moneyLoverGreen),
               const SizedBox(height: 15),
               Text(
                 lang.getText("login").toUpperCase(),
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
               ),
               const SizedBox(height: 8),
-
               Text(
                 lang.getText("app_description"),
                 style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
-
               const SizedBox(height: 40),
-
               _buildInputBox(
                 controller: emailController,
                 hintText: lang.getText("email"),
                 icon: Icons.email_outlined,
               ),
-
               const SizedBox(height: 20),
-
               _buildInputBox(
                 controller: passwordController,
                 hintText: lang.getText("password"),
                 icon: Icons.lock_outline,
                 isPassword: true,
               ),
-
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())),
-                  child: Text(lang.getText("forgot"), style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
+                  child: Text(lang.getText("forgot"), style: const TextStyle(color: moneyLoverGreen, fontSize: 13)),
                 ),
               ),
-
               const SizedBox(height: 15),
-
-
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: moneyLoverGreen,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     elevation: 5,
-                    shadowColor: Colors.greenAccent.withOpacity(0.4),
+                    shadowColor: moneyLoverGreen.withOpacity(0.3),
                   ),
                   child: Text(lang.getText("login").toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-
               const SizedBox(height: 20),
               Text(lang.getText("or"), style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 20),
-
-
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: OutlinedButton.icon(
                   onPressed: signInWithGoogle,
                   icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.white, size: 30),
-                  label: Text(
-                      lang.getText("google"),
-                      style: const TextStyle(color: Colors.white, fontSize: 15)),
+                  label: Text(lang.getText("google"), style: const TextStyle(color: Colors.white, fontSize: 15)),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    side: const BorderSide(color: Colors.greenAccent),
+                    side: const BorderSide(color: moneyLoverGreen),
                   ),
                 ),
               ),
-
               const SizedBox(height: 40),
-
-
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                        lang.getText("no_account"),
-                        style: const TextStyle(color: Colors.white70)
-                    ),
+                    Text(lang.getText("no_account"), style: const TextStyle(color: Colors.white70)),
                     TextButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen())),
                       child: Text(
                           lang.getText("register_now"),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.greenAccent,
-                              fontSize: 15
-                          )
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: moneyLoverGreen, fontSize: 15)
                       ),
                     ),
                   ],
@@ -224,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+        border: Border.all(color: moneyLoverGreen.withOpacity(0.3)),
       ),
       child: TextField(
         controller: controller,
@@ -233,12 +188,12 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(icon, color: Colors.greenAccent),
+          prefixIcon: Icon(icon, color: moneyLoverGreen),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           suffixIcon: isPassword
               ? IconButton(
-            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.greenAccent),
+            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: moneyLoverGreen),
             onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
           )
               : null,

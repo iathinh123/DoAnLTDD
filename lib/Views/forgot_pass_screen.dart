@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
 
+const Color moneyLoverGreen = Color(0xFF2DB15D);
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -25,12 +27,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.black)),
-        backgroundColor: Colors.greenAccent,
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: moneyLoverGreen,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -70,7 +71,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.greenAccent),
+          icon: const Icon(Icons.arrow_back_ios_new, color: moneyLoverGreen),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -81,17 +82,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: size.height * 0.05),
-
               const Center(
                 child: Icon(
                   Icons.lock_reset_rounded,
                   size: 100,
-                  color: Colors.greenAccent,
+                  color: moneyLoverGreen,
                 ),
               ),
-
               const SizedBox(height: 30),
-
               Text(
                 lang.getText("forgot").toUpperCase(),
                 style: const TextStyle(
@@ -106,9 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 lang.getText("forgot_instruction"),
                 style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
-
               const SizedBox(height: 40),
-
               Text(
                 lang.getText("email"),
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
@@ -118,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E1E1E),
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+                  border: Border.all(color: moneyLoverGreen.withOpacity(0.3)),
                 ),
                 child: TextField(
                   controller: emailController,
@@ -126,26 +122,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   decoration: InputDecoration(
                     hintText: "example@gmail.com",
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.greenAccent),
+                    prefixIcon: const Icon(Icons.email_outlined, color: moneyLoverGreen),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
                   ),
                 ),
               ),
-
               const SizedBox(height: 40),
-
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: resetPassword,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: moneyLoverGreen,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     elevation: 5,
-                    shadowColor: Colors.greenAccent.withOpacity(0.3),
+                    shadowColor: moneyLoverGreen.withOpacity(0.3),
                   ),
                   child: Text(
                     lang.getText("send_request").toUpperCase(),

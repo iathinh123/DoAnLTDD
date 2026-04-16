@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
 
+const Color moneyLoverGreen = Color(0xFF2DB15D);
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -16,7 +18,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -29,16 +30,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-
-          style: const TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.greenAccent,
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: moneyLoverGreen,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -88,7 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.greenAccent),
+          icon: const Icon(Icons.arrow_back_ios_new, color: moneyLoverGreen),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -99,7 +95,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: size.height * 0.02),
-
               Text(
                 lang.getText("register").toUpperCase(),
                 style: const TextStyle(
@@ -114,18 +109,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 lang.getText("slogan_register"),
                 style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
-
               const SizedBox(height: 40),
-
               _buildLabel(lang.getText("email")),
               _buildInputBox(
                 controller: emailController,
                 hintText: "example@gmail.com",
                 icon: Icons.email_outlined,
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel(lang.getText("password")),
               _buildInputBox(
                 controller: passwordController,
@@ -133,9 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: Icons.lock_outline,
                 isPassword: true,
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel(lang.getText("confirm_password")),
               _buildInputBox(
                 controller: confirmPasswordController,
@@ -143,20 +132,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: Icons.shield_outlined,
                 isPassword: true,
               ),
-
               const SizedBox(height: 40),
-
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: register,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: moneyLoverGreen,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     elevation: 5,
-                    shadowColor: Colors.greenAccent.withOpacity(0.3),
+                    shadowColor: moneyLoverGreen.withOpacity(0.3),
                   ),
                   child: Text(
                       lang.getText("register_now").toUpperCase(),
@@ -164,9 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -181,7 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         lang.getText("login"),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.greenAccent,
+                            color: moneyLoverGreen,
                             fontSize: 15
                         ),
                       ),
@@ -216,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.4)),
+        border: Border.all(color: moneyLoverGreen.withOpacity(0.3)),
       ),
       child: TextField(
         controller: controller,
@@ -225,12 +210,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(icon, color: Colors.greenAccent),
+          prefixIcon: Icon(icon, color: moneyLoverGreen),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           suffixIcon: isPassword
               ? IconButton(
-            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.greenAccent),
+            icon: Icon(
+              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+              color: moneyLoverGreen,
+            ),
             onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
           )
               : null,

@@ -18,6 +18,10 @@ class LanguageProvider extends ChangeNotifier {
       "no_account": "Bạn chưa có tài khoản?",
       "register_now": "Đăng ký ngay",
 
+      "ob_title_1": "Cắt giảm những chi phí không cần thiết hiệu quả",
+      "ob_title_2": "Tiết kiệm tiền đều đặn hàng tháng để đạt mục tiêu",
+      "ob_title_3": "Quản lý tất cả tài khoản, ví tiền ở một nơi duy nhất",
+
       "app_description": "Quản lý chi tiêu cá nhân",
       "err_empty_field": "Vui lòng không để trống thông tin",
       "err_invalid_login": "Email hoặc mật khẩu không đúng",
@@ -42,6 +46,10 @@ class LanguageProvider extends ChangeNotifier {
       "or": "Or",
       "no_account": "Don't have an account?",
       "register_now": "Register Now",
+
+      "ob_title_1": "Cut down unnecessary expenses effectively",
+      "ob_title_2": "Save money regularly every month to reach goals",
+      "ob_title_3": "Manage all accounts and wallets in one place",
 
 
       "app_description": "Personal Expense Manager",
