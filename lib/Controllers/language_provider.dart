@@ -14,6 +14,23 @@ class LanguageProvider extends ChangeNotifier {
       "password": "Mật khẩu",
       "forgot": "Quên mật khẩu?",
       "google": "Đăng nhập bằng Google",
+      "or": "Hoặc",
+      "no_account": "Bạn chưa có tài khoản?",
+      "register_now": "Đăng ký ngay",
+
+      "app_description": "Quản lý chi tiêu cá nhân",
+      "err_empty_field": "Vui lòng không để trống thông tin",
+      "err_invalid_login": "Email hoặc mật khẩu không đúng",
+
+      "slogan_register": "Quản lý thông minh, tài chính vững vàng.",
+      "confirm_password": "Xác nhận mật khẩu",
+      "already_have_account": "Đã có tài khoản?",
+      "err_password_mismatch": "Mật khẩu xác nhận không khớp",
+      "register_success": "Đăng ký thành công!",
+
+      "forgot_instruction": "Nhập email của bạn để nhận liên kết thiết lập lại mật khẩu mới.",
+      "send_request": "Gửi yêu cầu",
+      "reset_email_sent": "Đã gửi email khôi phục mật khẩu!",
     },
     "en": {
       "login": "Login",
@@ -22,6 +39,24 @@ class LanguageProvider extends ChangeNotifier {
       "password": "Password",
       "forgot": "Forgot Password?",
       "google": "Login with Google",
+      "or": "Or",
+      "no_account": "Don't have an account?",
+      "register_now": "Register Now",
+
+
+      "app_description": "Personal Expense Manager",
+      "err_empty_field": "Please fill in all fields",
+      "err_invalid_login": "Invalid email or password",
+
+      "slogan_register": "Smart management, solid finance.",
+      "confirm_password": "Confirm Password",
+      "already_have_account": "Already have an account?",
+      "err_password_mismatch": "Passwords do not match",
+      "register_success": "Registration successful!",
+
+      "forgot_instruction": "Enter your email to receive a password reset link.",
+      "send_request": "Send Request",
+      "reset_email_sent": "Password reset email sent!",
     }
   };
 

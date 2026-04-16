@@ -21,7 +21,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   Future login() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+
+    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
+      _showError(lang.getText("err_empty_field"));
+      return;
+    }
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -32,13 +50,13 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+
+      _showError(lang.getText("err_invalid_login"));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi: $e"), backgroundColor: Colors.red),
-      );
+      _showError("Lỗi hệ thống: $e");
     }
   }
-
 
   Future signInWithGoogle() async {
     try {
@@ -53,9 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi Google: $e"), backgroundColor: Colors.red),
-      );
+      _showError("Lỗi Google: $e");
     }
   }
 
@@ -95,7 +111,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
               ),
               const SizedBox(height: 8),
-              const Text("Quản lý chi tiêu cá nhân", style: TextStyle(color: Colors.grey, fontSize: 14)),
+
+              Text(
+                lang.getText("app_description"),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
+              ),
 
               const SizedBox(height: 40),
 
@@ -107,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-
               _buildInputBox(
                 controller: passwordController,
                 hintText: lang.getText("password"),
@@ -115,11 +134,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 isPassword: true,
               ),
 
-
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ForgotPasswordScreen())),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())),
                   child: Text(lang.getText("forgot"), style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
                 ),
               ),
@@ -144,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 20),
-              const Text("Hoặc", style: TextStyle(color: Colors.grey)),
+              Text(lang.getText("or"), style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 20),
 
 
@@ -154,7 +172,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: OutlinedButton.icon(
                   onPressed: signInWithGoogle,
                   icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.white, size: 30),
-                  label: const Text("Tiếp tục với Google", style: TextStyle(color: Colors.white, fontSize: 15)),
+                  label: Text(
+                      lang.getText("google"),
+                      style: const TextStyle(color: Colors.white, fontSize: 15)),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     side: const BorderSide(color: Colors.greenAccent),
@@ -169,10 +189,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Bạn chưa có tài khoản?", style: TextStyle(color: Colors.white70)),
+                    Text(
+                        lang.getText("no_account"),
+                        style: const TextStyle(color: Colors.white70)
+                    ),
                     TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterScreen())),
-                      child: const Text("Đăng ký ngay", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent, fontSize: 15)),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen())),
+                      child: Text(
+                          lang.getText("register_now"),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.greenAccent,
+                              fontSize: 15
+                          )
+                      ),
                     ),
                   ],
                 ),

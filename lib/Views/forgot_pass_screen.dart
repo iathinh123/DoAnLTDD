@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../Controllers/language_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -11,35 +13,55 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.black)),
+        backgroundColor: Colors.greenAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   Future resetPassword() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+
+    if (emailController.text.trim().isEmpty) {
+      _showError(lang.getText("err_empty_field"));
+      return;
+    }
+
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: emailController.text.trim(),
       );
 
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Đã gửi email khôi phục mật khẩu"),
-          backgroundColor: Colors.greenAccent,
-        ),
-      );
-
+      if (!mounted) return;
+      _showSuccess(lang.getText("reset_email_sent"));
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Lỗi: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError(lang.getText("err_invalid_login"));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
+    final lang = Provider.of<LanguageProvider>(context);
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -60,7 +82,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             children: [
               SizedBox(height: size.height * 0.05),
 
-
               const Center(
                 child: Icon(
                   Icons.lock_reset_rounded,
@@ -71,10 +92,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
               const SizedBox(height: 30),
 
-
-              const Text(
-                "QUÊN MẬT KHẨU",
-                style: TextStyle(
+              Text(
+                lang.getText("forgot").toUpperCase(),
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -82,17 +102,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "Nhập email của bạn để nhận liên kết thiết lập lại mật khẩu mới.",
-                style: TextStyle(color: Colors.grey, fontSize: 15),
+              Text(
+                lang.getText("forgot_instruction"),
+                style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
 
               const SizedBox(height: 40),
 
-
-              const Text(
-                "Địa chỉ Email",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              Text(
+                lang.getText("email"),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 10),
               Container(
@@ -104,18 +123,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: TextField(
                   controller: emailController,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: "example@gmail.com",
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                    prefixIcon: Icon(Icons.email_outlined, color: Colors.greenAccent),
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.greenAccent),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 10),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
                   ),
                 ),
               ),
 
               const SizedBox(height: 40),
-
 
               SizedBox(
                 width: double.infinity,
@@ -129,13 +147,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     elevation: 5,
                     shadowColor: Colors.greenAccent.withOpacity(0.3),
                   ),
-                  child: const Text(
-                    "GỬI YÊU CẦU",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    lang.getText("send_request").toUpperCase(),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),

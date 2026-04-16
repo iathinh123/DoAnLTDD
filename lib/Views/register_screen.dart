@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../Controllers/language_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key}); // Thêm const để tránh lỗi đỏ khi gọi từ Login
+  const RegisterScreen({super.key});
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -11,18 +13,51 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController(); // Thêm ô xác nhận mật khẩu
+  final confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  Future register() async {
 
-    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
-      _showSnackBar("Vui lòng nhập đầy đủ thông tin", Colors.orange);
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+
+          style: const TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.greenAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Future register() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
+
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty ||
+        confirmPasswordController.text.trim().isEmpty) {
+      _showError(lang.getText("err_empty_field"));
       return;
     }
 
     if (passwordController.text != confirmPasswordController.text) {
-      _showSnackBar("Mật khẩu xác nhận không khớp", Colors.red);
+      _showError(lang.getText("err_password_mismatch"));
       return;
     }
 
@@ -33,21 +68,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (!mounted) return;
-      _showSnackBar("Đăng ký thành công!", Colors.greenAccent);
-      Navigator.pop(context); // Quay lại trang Login
+      _showSuccess(lang.getText("register_success"));
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      _showError(lang.getText("err_invalid_login"));
     } catch (e) {
-      _showSnackBar("Lỗi: $e", Colors.red);
+      _showError("Lỗi hệ thống: $e");
     }
-  }
-
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final lang = Provider.of<LanguageProvider>(context);
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -68,10 +100,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               SizedBox(height: size.height * 0.02),
 
-
-              const Text(
-                "TẠO TÀI KHOẢN",
-                style: TextStyle(
+              Text(
+                lang.getText("register").toUpperCase(),
+                style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -79,45 +110,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "Quản lý thông minh, tài chính vững vàng.",
-                style: TextStyle(color: Colors.grey, fontSize: 15),
+              Text(
+                lang.getText("slogan_register"),
+                style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
 
               const SizedBox(height: 40),
 
-
-              _buildLabel("Địa chỉ Email"),
+              _buildLabel(lang.getText("email")),
               _buildInputBox(
                 controller: emailController,
-                hintText: "Nhập email của bạn",
+                hintText: "example@gmail.com",
                 icon: Icons.email_outlined,
               ),
 
               const SizedBox(height: 20),
 
-
-              _buildLabel("Mật khẩu"),
+              _buildLabel(lang.getText("password")),
               _buildInputBox(
                 controller: passwordController,
-                hintText: "Nhập mật khẩu",
+                hintText: lang.getText("password"),
                 icon: Icons.lock_outline,
                 isPassword: true,
               ),
 
               const SizedBox(height: 20),
 
-
-              _buildLabel("Xác nhận mật khẩu"),
+              _buildLabel(lang.getText("confirm_password")),
               _buildInputBox(
                 controller: confirmPasswordController,
-                hintText: "Nhập lại mật khẩu",
+                hintText: lang.getText("confirm_password"),
                 icon: Icons.shield_outlined,
                 isPassword: true,
               ),
 
               const SizedBox(height: 40),
-
 
               SizedBox(
                 width: double.infinity,
@@ -131,23 +158,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     elevation: 5,
                     shadowColor: Colors.greenAccent.withOpacity(0.3),
                   ),
-                  child: const Text(
-                      "ĐĂNG KÝ NGAY",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                  child: Text(
+                      lang.getText("register_now").toUpperCase(),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
                   ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-
               Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Đã có tài khoản? Đăng nhập",
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      lang.getText("already_have_account"),
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        lang.getText("login"),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.greenAccent,
+                            fontSize: 15
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
