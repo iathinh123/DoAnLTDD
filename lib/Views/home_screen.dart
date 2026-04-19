@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'transaction_screen.dart';
 import 'budget_screen.dart';
 import 'account_screen.dart';
+import '../models/transaction_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'expense_chart.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,66 +16,382 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int currentIndex = 0;
-
-  double balance = -1000000;
-  double totalExpense = 1000000;
+  double balance = 0;
+  double totalExpense = 0;
   double totalIncome = 0;
+  List<TransactionModel> transactions = [];
+  bool isBalanceVisible = true;
+  List<String> userDefinedCategories = [];
 
-  // Hàm hiển thị bảng nhập liệu khi bấm nút +
+  // Controllers cho Modal
+  final amountController = TextEditingController();
+  final noteController = TextEditingController();
+  int selectedType = 0;
+  String selectedCategory = "Chọn nhóm";
+  DateTime selectedDate = DateTime.now();
+
+  String get userId => FirebaseAuth.instance.currentUser?.uid ?? "";
+
+  final Map<String, List<String>> defaultCategories = {
+    "expense": ["Ăn uống", "Mua sắm", "Di chuyển"],
+    "income": ["Lương", "Thưởng", "Thu khác"],
+    "debt": ["Cho vay", "Trả nợ", "Thu nợ"],
+  };
+
+  String get typeKey {
+    if (selectedType == 0) return "expense";
+    if (selectedType == 1) return "income";
+    return "debt";
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    listenToTransactions(); // Đổi sang dùng Stream để tự cập nhật giao diện
+    loadUserCategories();
+  }
+
+  // ================= LẮNG NGHE DỮ LIỆU REAL-TIME =================
+  void listenToTransactions() {
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("transactions")
+        .snapshots()
+        .listen((snapshot) {
+      double tExpense = 0; // Tổng chi (hiển thị trên chart/báo cáo)
+      double tIncome = 0;  // Tổng thu (hiển thị trên chart/báo cáo)
+      double calculatedBalance = 0; // Số dư thực tế trong ví
+
+      List<TransactionModel> tList = snapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
+          .toList();
+
+      for (var t in tList) {
+        // Đảm bảo t.amount luôn là số dương tuyệt đối để dễ phân loại logic
+        double absoluteAmount = t.amount.abs();
+
+        if (t.type == 1) {
+          // 1. KHOẢN THU THÔNG THƯỜNG
+          tIncome += absoluteAmount;
+          calculatedBalance += absoluteAmount;
+        }
+        else if (t.type == 0) {
+          // 2. KHOẢN CHI THÔNG THƯỜNG
+          tExpense += absoluteAmount;
+          calculatedBalance -= absoluteAmount; // Trừ tiền khỏi ví
+        }
+        else if (t.type == 2) {
+          // 3. XỬ LÝ VAY/NỢ (Loại 2)
+          if (t.category == "Trả nợ" || t.category == "Cho vay") {
+            // Tiền ra khỏi túi
+            tExpense += absoluteAmount;
+            calculatedBalance -= absoluteAmount; // PHẢI TRỪ TIỀN Ở ĐÂY
+          } else {
+            // Tiền vào túi (Thu nợ / Đi vay)
+            tIncome += absoluteAmount;
+            calculatedBalance += absoluteAmount;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          transactions = tList;
+          totalExpense = tExpense;
+          totalIncome = tIncome;
+          // Gán trực tiếp số dư đã tính toán thay vì lấy hiệu số Income - Expense
+          // để tránh nhầm lẫn về dấu âm/dương trên UI
+          balance = calculatedBalance;
+        });
+      }
+    });
+  }
+
+  void loadUserCategories() {
+    if (userId.isEmpty) return;
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("categories")
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          userDefinedCategories = snapshot.docs.map((doc) => doc["name"].toString()).toList();
+        });
+      }
+    });
+  }
+
+  // ================= LƯU GIAO DỊCH =================
+  void _saveTransaction() async {
+    double amount = double.tryParse(amountController.text) ?? 0;
+    if (amount <= 0 || selectedCategory == "Chọn nhóm") return;
+
+    final docRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("transactions")
+        .doc();
+
+    final newTransaction = TransactionModel(
+      id: docRef.id,
+      type: selectedType,
+      category: selectedCategory,
+      amount: amount,
+      note: noteController.text,
+      date: selectedDate,
+    );
+
+    await docRef.set(newTransaction.toMap());
+
+    // Reset Form
+    amountController.clear();
+    noteController.clear();
+    setState(() {
+      selectedCategory = "Chọn nhóm";
+      selectedDate = DateTime.now();
+    });
+
+    if (mounted) Navigator.pop(context);
+    // Không cần gọi loadTransactions() nữa vì stream snapshots đã lo việc này
+  }
+
+  // ================= UI HELPERS =================
+  Widget _typeBtn(String t, int i, Function s) {
+    return GestureDetector(
+      onTap: () => s(() {
+        selectedType = i;
+        selectedCategory = "Chọn nhóm";
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: selectedType == i ? const Color(0xFF4CAF50) : const Color(0xFF3A3A3C),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(t, style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildCard({required String title, required String action, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+              Text(action, style: const TextStyle(color: Colors.green, fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          child
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportItem(String label, double amount, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(
+          isBalanceVisible ? "${amount.toStringAsFixed(0)} đ" : "****** đ",
+          style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  // ================= MODAL SHEETS =================
+  void _showCreateCategorySheet() {
+    final nameCatController = TextEditingController();
+    int catType = selectedType;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setST) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Nhóm mới", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: nameCatController,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: "Tên nhóm (ví dụ: Đi chợ, Tiền điện...)",
+                    hintStyle: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text("Khoản thu"),
+                      selected: catType == 1,
+                      onSelected: (val) => setST(() => catType = 1),
+                    ),
+                    const SizedBox(width: 10),
+                    ChoiceChip(
+                      label: const Text("Khoản chi"),
+                      selected: catType == 0,
+                      onSelected: (val) => setST(() => catType = 0),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (nameCatController.text.isNotEmpty) {
+                        await FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(userId)
+                            .collection("categories")
+                            .add({
+                          "name": nameCatController.text,
+                          "type": catType == 0 ? "expense" : "income",
+                        });
+                        if (mounted) Navigator.pop(context);
+                      }
+                    },
+                    child: const Text("Lưu nhóm"),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  void _showCategoryPicker(Function setModalState) {
+    List<String> list = [];
+    list.addAll(defaultCategories[typeKey] ?? []);
+    list.addAll(userDefinedCategories);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) {
+        return Column(
+          children: [
+            const Padding(padding: EdgeInsets.all(16), child: Text("Chọn nhóm", style: TextStyle(color: Colors.white, fontSize: 18))),
+            Expanded(
+              child: ListView(
+                children: [
+                  ...list.map((e) => ListTile(
+                    leading: const Icon(Icons.label_outline, color: Colors.white70),
+                    title: Text(e, style: const TextStyle(color: Colors.white)),
+                    onTap: () {
+                      setModalState(() => selectedCategory = e);
+                      Navigator.pop(sheetContext);
+                    },
+                  )),
+                  ListTile(
+                    leading: const Icon(Icons.add_circle_outline, color: Colors.green),
+                    title: const Text("Thêm nhóm mới", style: TextStyle(color: Colors.green)),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showCreateCategorySheet();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showAddTaskSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20, right: 20, top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Thêm giao dịch mới",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              TextField(
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Số tiền",
-                  labelStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.money, color: Colors.green),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Thêm giao dịch mới", style: TextStyle(color: Colors.white, fontSize: 18)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _typeBtn("Khoản chi", 0, setModalState),
+                    const SizedBox(width: 10),
+                    _typeBtn("Khoản thu", 1, setModalState),
+                    const SizedBox(width: 10),
+                    _typeBtn("Vay/Nợ", 2, setModalState),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: "Ghi chú",
-                  labelStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.edit, color: Colors.blue),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.white, fontSize: 24),
+                  decoration: const InputDecoration(hintText: "Số tiền", hintStyle: TextStyle(color: Colors.grey)),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Lưu giao dịch", style: TextStyle(color: Colors.white)),
+                ListTile(
+                  onTap: () => _showCategoryPicker(setModalState),
+                  leading: const Icon(Icons.category, color: Colors.white),
+                  title: Text(selectedCategory, style: const TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
+                ListTile(
+                  onTap: () async {
+                    DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setModalState(() => selectedDate = picked);
+                  },
+                  leading: const Icon(Icons.calendar_today, color: Colors.white),
+                  title: Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    onPressed: _saveTransaction,
+                    child: const Text("LƯU GIAO DỊCH", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        });
       },
     );
   }
@@ -80,148 +400,94 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
-      // IndexedStack quản lý 4 trang tương ứng với 4 Tab
       body: IndexedStack(
         index: currentIndex,
         children: [
-          // INDEX 0: TRANG TỔNG QUAN
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "${balance.toStringAsFixed(2)} đ",
-                            style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Text(
+                                isBalanceVisible ? "${balance.toStringAsFixed(0)} đ" : "****** đ",
+                                style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              IconButton(
+                                icon: Icon(isBalanceVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white, size: 20),
+                                onPressed: () => setState(() => isBalanceVisible = !isBalanceVisible),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
                           const Text("Tổng số dư", style: TextStyle(color: Colors.grey)),
                         ],
                       ),
-                      const Row(
-                        children: [
-                          Icon(Icons.remove_red_eye, color: Colors.white),
-                          SizedBox(width: 12),
-                          Icon(Icons.search, color: Colors.white),
-                          SizedBox(width: 12),
-                          Icon(Icons.notifications, color: Colors.white),
-                        ],
-                      )
+                      const Icon(Icons.notifications_none, color: Colors.white),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
-                    child: Column(
+                  // Ví của tôi
+                  _buildCard(
+                    title: "Ví của tôi",
+                    action: "Xem tất cả",
+                    child: Row(
                       children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Ví của tôi", style: TextStyle(color: Colors.white, fontSize: 16)),
-                            Text("Xem tất cả", style: TextStyle(color: Colors.green, fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.account_balance_wallet)),
-                            const SizedBox(width: 12),
-                            const Expanded(child: Text("Tiền mặt", style: TextStyle(color: Colors.white))),
-                            Text("${balance.toStringAsFixed(2)} đ", style: const TextStyle(color: Colors.white))
-                          ],
-                        )
+                        const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.wallet, color: Colors.white)),
+                        const SizedBox(width: 15),
+                        const Expanded(child: Text("Tiền mặt", style: TextStyle(color: Colors.white))),
+                        Text(isBalanceVisible ? "${balance.toStringAsFixed(0)} đ" : "******", style: const TextStyle(color: Colors.white)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12)),
-                    child: Column(
+                  // Báo cáo
+                  _buildCard(
+                    title: "Báo cáo tháng này",
+                    action: "Xem báo cáo",
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Báo cáo tháng này", style: TextStyle(color: Colors.white, fontSize: 16)),
-                            Text("Xem báo cáo", style: TextStyle(color: Colors.green, fontSize: 14)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              children: [
-                                const Text("Tổng đã chi", style: TextStyle(color: Colors.grey)),
-                                Text(totalExpense.toStringAsFixed(2), style: const TextStyle(color: Colors.red, fontSize: 18))
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                const Text("Tổng thu", style: TextStyle(color: Colors.grey)),
-                                Text(totalIncome.toStringAsFixed(2), style: const TextStyle(color: Colors.blue, fontSize: 18))
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          height: 150,
-                          decoration: BoxDecoration(border: Border.all(color: Colors.grey)),
-                          child: const Center(child: Text("Nhập giao dịch để xem báo cáo", style: TextStyle(color: Colors.grey))),
-                        )
+                        _buildReportItem("Tổng đã chi", totalExpense, Colors.red),
+                        _buildReportItem("Tổng thu", totalIncome, Colors.blue),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  // Chart
+                  ExpenseChart(transactions: transactions),
                   const SizedBox(height: 80),
                 ],
               ),
             ),
           ),
-
-          // INDEX 1: TRANG SỔ GIAO DỊCH
-          const TransactionScreen(),
-
-          // INDEX 2: TRANG NGÂN SÁCH
+          TransactionScreen(transactions: transactions),
           BudgetScreen(),
-
-          // INDEX 3: TRANG TÀI KHOẢN
           const AccountScreen(),
         ],
       ),
-
-      // Nút thêm giao dịch ở giữa
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () => _showAddTaskSheet(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-      // Thanh điều hướng dưới cùng
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
+        onTap: (i) => setState(() => currentIndex = i),
         backgroundColor: Colors.black,
-        selectedItemColor: Colors.green,
+        selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Tổng quan"),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: "Sổ giao dịch"),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: "Giao dịch"),
           BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: "Ngân sách"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Tài khoản"),
         ],

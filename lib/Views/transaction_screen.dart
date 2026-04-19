@@ -1,13 +1,15 @@
+import 'package:doanltdd/Views/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
+import '../models/transaction_model.dart';
 
 const Color moneyLoverGreen = Color(0xFF2DB15D);
 const Color darkBackground = Color(0xFF000000);
 const Color surfaceColor = Color(0xFF1A1A1A);
 
 class TransactionScreen extends StatefulWidget {
-  const TransactionScreen({super.key});
+  const TransactionScreen({super.key, required List<TransactionModel> transactions});
 
   @override
   State<TransactionScreen> createState() => _TransactionScreenState();
