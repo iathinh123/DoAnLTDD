@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 const Color moneyLoverGreen = Color(0xFF2DB15D);
 
 class RegisterScreen extends StatefulWidget {
@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
+  final nameController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
@@ -62,6 +63,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+      // Lấy UID
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+
+      // Lưu Firestore
+      await FirebaseFirestore.instance
+          .collection('NguoiDung')
+          .doc(uid)
+          .set({
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'avatarUrl': 'URL',
+        'role': 'user',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
       if (!mounted) return;
       _showSuccess(lang.getText("register_success"));
@@ -110,6 +125,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
               const SizedBox(height: 40),
+              _buildLabel("Họ và tên"),
+              _buildInputBox(
+                controller: nameController,
+                hintText: "Đầy đủ họ và tên",
+                icon: Icons.person_outline,
+              ),
+              const SizedBox(height: 20),
               _buildLabel(lang.getText("email")),
               _buildInputBox(
                 controller: emailController,

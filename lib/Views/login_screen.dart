@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
-
 import 'register_screen.dart';
 import 'forgot_pass_screen.dart';
 import '../Controllers/language_provider.dart';
 import 'home_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'admin_screen.dart';
 
 const Color moneyLoverGreen = Color(0xFF2DB15D);
 
@@ -40,12 +41,35 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+      //Lấy uid
+      String uid = userCredential.user!.uid;
+
+      //Đọc role từ Firestore
+      var doc = await FirebaseFirestore.instance
+          .collection('NguoiDung')
+          .doc(uid)
+          .get();
+
+      String role = doc.data()?['role'] ?? 'user';
+      //widget bị hủy (đang thao tác bỗng thoát) dừng ngay.
       if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+
+      //Chia trang theo role
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => AdminScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       _showError(lang.getText("err_invalid_login"));
     } catch (e) {

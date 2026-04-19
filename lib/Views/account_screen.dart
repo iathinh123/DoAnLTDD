@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'currency_screen.dart';
-
+import 'login_screen.dart';
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
@@ -181,6 +181,11 @@ class AccountScreen extends StatelessWidget {
     return TextButton(
       onPressed: () async {
         await FirebaseAuth.instance.signOut();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => LoginScreen()),
+              (route) => false,
+        );
       },
       child: const Text("Đăng xuất tài khoản",
           style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.w500)),
