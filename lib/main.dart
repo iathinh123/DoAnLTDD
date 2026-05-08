@@ -26,17 +26,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      // Định nghĩa các Routes để Navigator có thể tìm thấy '/login' khi đăng xuất
       initialRoute: '/',
       routes: {
-        '/': (context) => const RootHandler(), // Xử lý màn hình bắt đầu
-        '/login': (context) => const LoginScreen(), // Route đến màn hình đăng nhập
+        '/': (context) => const RootHandler(),
+        '/login': (context) => const LoginScreen(),
       },
     );
   }
 }
 
-// Widget trung gian để kiểm tra người dùng đã đăng nhập hay chưa
 class RootHandler extends StatelessWidget {
   const RootHandler({super.key});
 

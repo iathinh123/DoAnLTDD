@@ -1,3 +1,4 @@
+import 'package:doanltdd/Views/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'transaction_screen.dart';
 import 'budget_screen.dart';
@@ -6,7 +7,8 @@ import '../models/transaction_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'expense_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:intl/intl.dart';
+import 'all_transaction_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,15 +17,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<TransactionModel> allTransactions = [];
+  String getWeekday(int day) {
+    switch (day) {
+      case 1:
+        return "Thứ 2";
+      case 2:
+        return "Thứ 3";
+      case 3:
+        return "Thứ 4";
+      case 4:
+        return "Thứ 5";
+      case 5:
+        return "Thứ 6";
+      case 6:
+        return "Thứ 7";
+      case 7:
+        return "CN";
+      default:
+        return "";
+    }
+  }
+
+  String formatMoney(double amount) {
+    final formatter = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+      decimalDigits: 0,
+    );
+    return formatter.format(amount);
+  }
   int currentIndex = 0;
   double balance = 0;
   double totalExpense = 0;
   double totalIncome = 0;
   List<TransactionModel> transactions = [];
   bool isBalanceVisible = true;
-  List<String> userDefinedCategories = [];
 
-  // Controllers cho Modal
   final amountController = TextEditingController();
   final noteController = TextEditingController();
   int selectedType = 0;
@@ -44,10 +74,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return "debt";
   }
 
+  List<Map<String, dynamic>> userDefinedCategories = [];
   @override
   void initState() {
     super.initState();
-    listenToTransactions(); // Đổi sang dùng Stream để tự cập nhật giao diện
+    listenToTransactions();
     loadUserCategories();
   }
 
@@ -59,38 +90,29 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection("transactions")
         .snapshots()
         .listen((snapshot) {
-      double tExpense = 0; // Tổng chi (hiển thị trên chart/báo cáo)
-      double tIncome = 0;  // Tổng thu (hiển thị trên chart/báo cáo)
-      double calculatedBalance = 0; // Số dư thực tế trong ví
+      double tExpense = 0;
+      double tIncome = 0;
+      double calculatedBalance = 0;
+
+      // 1. Xác định mốc thời gian bắt đầu
+      DateTime now = DateTime.now();
+      DateTime startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      startOfWeek = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
 
       List<TransactionModel> tList = snapshot.docs
           .map((doc) => TransactionModel.fromMap(doc.id, doc.data()))
           .toList();
 
-      for (var t in tList) {
-        // Đảm bảo t.amount luôn là số dương tuyệt đối để dễ phân loại logic
-        double absoluteAmount = t.amount.abs();
+      tList.sort((a, b) => b.date.compareTo(a.date));
 
-        if (t.type == 1) {
-          // 1. KHOẢN THU THÔNG THƯỜNG
-          tIncome += absoluteAmount;
-          calculatedBalance += absoluteAmount;
-        }
-        else if (t.type == 0) {
-          // 2. KHOẢN CHI THÔNG THƯỜNG
-          tExpense += absoluteAmount;
-          calculatedBalance -= absoluteAmount; // Trừ tiền khỏi ví
-        }
-        else if (t.type == 2) {
-          // 3. XỬ LÝ VAY/NỢ (Loại 2)
-          if (t.category == "Trả nợ" || t.category == "Cho vay") {
-            // Tiền ra khỏi túi
-            tExpense += absoluteAmount;
-            calculatedBalance -= absoluteAmount; // PHẢI TRỪ TIỀN Ở ĐÂY
+      for (var t in tList) {
+        calculatedBalance += t.amount;
+
+        if (t.date.isAfter(startOfWeek.subtract(const Duration(seconds: 1)))) {
+          if (t.amount < 0) {
+            tExpense += t.amount.abs();
           } else {
-            // Tiền vào túi (Thu nợ / Đi vay)
-            tIncome += absoluteAmount;
-            calculatedBalance += absoluteAmount;
+            tIncome += t.amount;
           }
         }
       }
@@ -100,8 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
           transactions = tList;
           totalExpense = tExpense;
           totalIncome = tIncome;
-          // Gán trực tiếp số dư đã tính toán thay vì lấy hiệu số Income - Expense
-          // để tránh nhầm lẫn về dấu âm/dương trên UI
           balance = calculatedBalance;
         });
       }
@@ -118,7 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
         .listen((snapshot) {
       if (mounted) {
         setState(() {
-          userDefinedCategories = snapshot.docs.map((doc) => doc["name"].toString()).toList();
+          userDefinedCategories = snapshot.docs.map((doc) {
+            // Ép kiểu dữ liệu từ Firebase
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            return {
+              "name": data["name"].toString(),
+              "type": data["type"].toString(),
+            };
+          }).toList();
         });
       }
     });
@@ -126,8 +153,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ================= LƯU GIAO DỊCH =================
   void _saveTransaction() async {
-    double amount = double.tryParse(amountController.text) ?? 0;
-    if (amount <= 0 || selectedCategory == "Chọn nhóm") return;
+    double amountValue = double.tryParse(amountController.text) ?? 0;
+    if (amountValue <= 0 || selectedCategory == "Chọn nhóm") return;
 
     final docRef = FirebaseFirestore.instance
         .collection("users")
@@ -139,14 +166,13 @@ class _HomeScreenState extends State<HomeScreen> {
       id: docRef.id,
       type: selectedType,
       category: selectedCategory,
-      amount: amount,
+      amount: amountValue,
       note: noteController.text,
       date: selectedDate,
     );
 
     await docRef.set(newTransaction.toMap());
 
-    // Reset Form
     amountController.clear();
     noteController.clear();
     setState(() {
@@ -155,7 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     if (mounted) Navigator.pop(context);
-    // Không cần gọi loadTransactions() nữa vì stream snapshots đã lo việc này
   }
 
   // ================= UI HELPERS =================
@@ -203,13 +228,101 @@ class _HomeScreenState extends State<HomeScreen> {
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
         Text(
-          isBalanceVisible ? "${amount.toStringAsFixed(0)} đ" : "****** đ",
+          isBalanceVisible ? formatMoney(amount) : "****** đ",
           style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
+  Widget _buildRecentTransactions() {
+    List<TransactionModel> recentList = transactions.take(3).toList();
+
+    return _buildCard(
+      title: "Giao dịch gần đây",
+      action: "Xem tất cả",
+      child: Column(
+        children: [
+          ...recentList.map((t) {
+            bool isExpense = t.amount < 0;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: Colors.grey,
+                    child: Icon(Icons.receipt, color: Colors.white),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.category,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "${getWeekday(t.date.weekday)}, ${t.date.day}/${t.date.month}/${t.date.year}",
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Text(
+                    formatMoney(t.amount),
+                    style: TextStyle(
+                      color: isExpense ? Colors.red : Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AllTransactionsScreen(
+                    transactions: transactions,
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              "Xem tất cả",
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Ví dụ logic lưu nhóm mới vào Firebase
+  Future<void> saveNewCategory(String name, String type) async {
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("categories")
+        .add({
+      "name": name,
+      "type": type, // Phải lưu đúng "income" hoặc "expense"
+      "createdAt": FieldValue.serverTimestamp(),
+    });
+  }
   // ================= MODAL SHEETS =================
   void _showCreateCategorySheet() {
     final nameCatController = TextEditingController();
@@ -284,35 +397,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showCategoryPicker(Function setModalState) {
-    List<String> list = [];
-    list.addAll(defaultCategories[typeKey] ?? []);
-    list.addAll(userDefinedCategories);
+    // 1. Tạo danh sách hiển thị cuối cùng
+    List<String> displayList = [];
+
+    displayList.addAll(defaultCategories[typeKey] ?? []);
+
+    // Chỉ lấy những nhóm có 'type' khớp với 'typeKey' hiện tại
+    final filteredUserCats = userDefinedCategories
+        .where((cat) => cat["type"] == typeKey)
+        .map((cat) => cat["name"] as String)
+        .toList();
+
+    displayList.addAll(filteredUserCats);
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+      ),
       builder: (sheetContext) {
         return Column(
           children: [
-            const Padding(padding: EdgeInsets.all(16), child: Text("Chọn nhóm", style: TextStyle(color: Colors.white, fontSize: 18))),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text("Chọn nhóm",
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
             Expanded(
               child: ListView(
                 children: [
-                  ...list.map((e) => ListTile(
+                  // Hiển thị toàn bộ danh sách đã gộp
+                  ...displayList.map((categoryName) => ListTile(
                     leading: const Icon(Icons.label_outline, color: Colors.white70),
-                    title: Text(e, style: const TextStyle(color: Colors.white)),
+                    title: Text(categoryName, style: const TextStyle(color: Colors.white)),
                     onTap: () {
-                      setModalState(() => selectedCategory = e);
+                      setModalState(() => selectedCategory = categoryName);
                       Navigator.pop(sheetContext);
                     },
                   )),
+
+                  // Nút thêm nhóm mới luôn ở dưới cùng
                   ListTile(
                     leading: const Icon(Icons.add_circle_outline, color: Colors.green),
                     title: const Text("Thêm nhóm mới", style: TextStyle(color: Colors.green)),
                     onTap: () {
                       Navigator.pop(sheetContext);
-                      _showCreateCategorySheet();
+                      _showCreateCategorySheet(); // Hàm mở giao diện tạo nhóm mới
                     },
                   ),
                 ],
@@ -418,8 +549,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             children: [
                               Text(
-                                isBalanceVisible ? "${balance.toStringAsFixed(0)} đ" : "****** đ",
+                                formatMoney(balance),
                                 style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.search, color: Colors.white),
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(
+                                    builder: (context) => AdvancedSearchScreen(allTransactions: transactions),
+                                  ));
+                                },
                               ),
                               IconButton(
                                 icon: Icon(isBalanceVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white, size: 20),
@@ -443,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.wallet, color: Colors.white)),
                         const SizedBox(width: 15),
                         const Expanded(child: Text("Tiền mặt", style: TextStyle(color: Colors.white))),
-                        Text(isBalanceVisible ? "${balance.toStringAsFixed(0)} đ" : "******", style: const TextStyle(color: Colors.white)),
+                        Text(formatMoney(balance)),
                       ],
                     ),
                   ),
@@ -463,6 +602,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   // Chart
                   ExpenseChart(transactions: transactions),
+                  const SizedBox(height: 80),
+
+                  _buildRecentTransactions(),
+
                   const SizedBox(height: 80),
                 ],
               ),

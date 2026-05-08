@@ -17,7 +17,8 @@ class LanguageProvider extends ChangeNotifier {
       "or": "Hoặc",
       "no_account": "Bạn chưa có tài khoản?",
       "register_now": "Đăng ký ngay",
-
+      "Username": "Họ và tên",
+      "Fullname": "Đầy đủ họ và tên",
       "ob_title_1": "Cắt giảm những chi phí không cần thiết hiệu quả",
       "ob_title_2": "Tiết kiệm tiền đều đặn hàng tháng để đạt mục tiêu",
       "ob_title_3": "Quản lý tất cả tài khoản, ví tiền ở một nơi duy nhất",
@@ -46,7 +47,8 @@ class LanguageProvider extends ChangeNotifier {
       "or": "Or",
       "no_account": "Don't have an account?",
       "register_now": "Register Now",
-
+      "Username" : "Username",
+      "Fullname": "Full name",
       "ob_title_1": "Cut down unnecessary expenses effectively",
       "ob_title_2": "Save money regularly every month to reach goals",
       "ob_title_3": "Manage all accounts and wallets in one place",

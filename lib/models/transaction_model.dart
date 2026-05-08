@@ -15,26 +15,28 @@ class TransactionModel {
     required this.date,
   });
 
-  // ================= TO MAP =================
+  // ================= TO MAP (Lưu lên Firestore) =================
   Map<String, dynamic> toMap() {
     return {
-      'amount': amount,
+      'amount': amount.abs(), // Luôn lưu giá trị dương trên Firestore để dễ quản lý dữ liệu gốc
       'category': category,
       'note': note,
       'type': type,
-      'date': date.toIso8601String(), // lưu dạng String
+      'date': date.toIso8601String(),
     };
   }
 
-  // ================= FROM MAP =================
+  // ================= FROM MAP (Lấy về từ Firestore) =================
   factory TransactionModel.fromMap(String id, Map<String, dynamic> map) {
     double amt = (map['amount'] ?? 0).toDouble();
+    int tType = map['type'] ?? 0;
 
-    // Kiểm tra nếu là loại Vay/Nợ (type 2)
-    if (map['type'] == 2) {
-      // Nếu là "Trả nợ" hoặc "Cho vay" -> Ép thành số âm để Chart hiện xuống dưới
+    if (tType == 0) {
+      amt = -amt.abs();
+    }
+    else if (tType == 2) {
       if (map['category'] == "Trả nợ" || map['category'] == "Cho vay") {
-        amt = -amt;
+        amt = -amt.abs();
       }
     }
 
@@ -42,22 +44,20 @@ class TransactionModel {
       id: id,
       amount: amt,
       category: map['category'] ?? "Khác",
-      date: map['date'] != null ? DateTime.parse(map['date']) : DateTime.now(),
-      type: map['type'] ?? 0,
+      date: _parseDate(map['date']),
+      type: tType,
       note: map['note'] ?? "",
     );
   }
 
-  // ================= HANDLE DATE =================
+  // ================= HANDLE DATE (Xử lý ngày tháng) =================
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime.now();
 
-    // Nếu là String
     if (value is String) {
       return DateTime.tryParse(value) ?? DateTime.now();
     }
 
-    // Nếu là Timestamp (Firestore)
     if (value.runtimeType.toString() == 'Timestamp') {
       return value.toDate();
     }

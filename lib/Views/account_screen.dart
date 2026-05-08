@@ -94,7 +94,13 @@ class AccountScreen extends StatelessWidget {
   }
 
   //iển thị thông tin User
+  // Hiển thị thông tin User
   Widget _buildProfileCard(User? user) {
+    // Lấy thông tin từ Firebase User
+    String? photoUrl = user?.photoURL;
+    String name = user?.displayName ?? "Chưa đặt tên";
+    String email = user?.email ?? "No Email";
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
@@ -107,29 +113,35 @@ class AccountScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
         boxShadow: [
-          BoxShadow(color: Colors.green.withOpacity(0.05),
+          BoxShadow(
+              color: Colors.green.withOpacity(0.05),
               blurRadius: 10,
               spreadRadius: 5)
         ],
       ),
       child: Row(
         children: [
+          // --- PHẦN THAY ĐỔI: Hiển thị ảnh đại diện ---
           CircleAvatar(
             radius: 35,
-            backgroundColor: Colors.green.withOpacity(0.2),
-            child: const Icon(Icons.person, size: 40, color: Colors.green),
+            backgroundColor: Colors.green.withOpacity(0.1),
+            backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+            child: photoUrl == null
+                ? const Icon(Icons.person, size: 40, color: Colors.green)
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user?.displayName ?? "Chưa đặt tên",
-                    style: const TextStyle(color: Colors.white,
+                Text(name,
+                    style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                Text(user?.email ?? "No Email",
+                Text(email,
                     style: TextStyle(color: Colors.grey[400], fontSize: 13)),
               ],
             ),
@@ -189,44 +201,36 @@ class AccountScreen extends StatelessWidget {
       onPressed: () {
         showDialog(
           context: context,
-          builder: (context) =>
-              AlertDialog(
-                backgroundColor: const Color(0xFF1A1A1A),
-                title: const Text(
-                    "Đăng xuất", style: TextStyle(color: Colors.white)),
-                content: const Text("Bạn có chắc chắn muốn đăng xuất không?",
-                    style: TextStyle(color: Colors.grey)),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                        "Hủy", style: TextStyle(color: Colors.green)),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/login',
-                                (route) => false
-                        );
-                      }
-                    },
-                    child: const Text(
-                        "Đăng xuất", style: TextStyle(color: Colors.redAccent)),
-                  ),
-                ],
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            title: const Text("Đăng xuất", style: TextStyle(color: Colors.white)),
+            content: const Text("Bạn có chắc chắn muốn đăng xuất không?",
+                style: TextStyle(color: Colors.grey)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Hủy", style: TextStyle(color: Colors.green)),
               ),
-        );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => LoginScreen()),
-              (route) => false,
+              TextButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  }
+                },
+                child: const Text("Đăng xuất", style: TextStyle(color: Colors.redAccent)),
+              ),
+            ],
+          ),
         );
       },
       child: const Text("Đăng xuất tài khoản",
-          style: TextStyle(color: Colors.redAccent,
+          style: TextStyle(
+              color: Colors.redAccent,
               fontSize: 16,
               fontWeight: FontWeight.w500)),
     );
