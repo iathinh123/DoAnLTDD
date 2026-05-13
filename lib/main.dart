@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'Controllers/budget_controller.dart';
 import 'Controllers/language_provider.dart';
 import 'Views/onboarding_screen.dart';
 import 'Views/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +16,11 @@ void main() async {
   await langProvider.loadLanguage();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => langProvider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => langProvider),
+        ChangeNotifierProvider(create: (_) => BudgetController()..listenBudgets()),
+      ],
       child: MyApp(),
     ),
   );
