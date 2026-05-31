@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -45,6 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future register() async {
     final lang = Provider.of<LanguageProvider>(context, listen: false);
+    final name = nameController.text.trim();
 
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty ||
@@ -53,38 +55,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (name.isEmpty) {
+      _showError(lang.languageCode == "vi"
+          ? "Vui lòng nhập họ và tên"
+          : "Please enter your full name");
+      return;
+    }
+
     if (passwordController.text != confirmPasswordController.text) {
       _showError(lang.getText("err_password_mismatch"));
       return;
     }
 
+    setState(() => _isLoading = true);
+
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      // Lấy UID
-      String uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // Lưu Firestore
+      await credential.user?.updateDisplayName(name);
+      await credential.user?.reload();
+
+      final uid = credential.user!.uid;
       await FirebaseFirestore.instance
           .collection('NguoiDung')
           .doc(uid)
           .set({
-        'name': nameController.text.trim(),
+        'name': name,
         'email': emailController.text.trim(),
-        'avatarUrl': 'URL',
+        'avatarUrl': '',
         'role': 'user',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (!mounted) return;
+      _isLoading = false;
       _showSuccess(lang.getText("register_success"));
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      _showError(lang.getText("err_invalid_login"));
+      setState(() => _isLoading = false);
+      String msg;
+      switch (e.code) {
+        case 'email-already-in-use':
+          msg = lang.languageCode == "vi"
+              ? "Email này đã được đăng ký"
+              : "Email already in use";
+          break;
+        case 'weak-password':
+          msg = lang.languageCode == "vi"
+              ? "Mật khẩu phải có ít nhất 6 ký tự"
+              : "Password must be at least 6 characters";
+          break;
+        case 'invalid-email':
+          msg = lang.languageCode == "vi"
+              ? "Email không hợp lệ"
+              : "Invalid email";
+          break;
+        default:
+          msg = lang.getText("err_invalid_login");
+      }
+      _showError(msg);
     } catch (e) {
-      _showError("Lỗi hệ thống: $e");
+      setState(() => _isLoading = false);
+      _showError(lang.languageCode == "vi"
+          ? "Lỗi hệ thống: $e"
+          : "System error: $e");
     }
   }
 
@@ -125,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
               const SizedBox(height: 40),
-              _buildLabel("Họ và tên"),
+              _buildLabel(lang.getText("Username")),
               _buildInputBox(
                 controller: nameController,
                 hintText: "Đầy đủ họ và tên",
@@ -159,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: register,
+                  onPressed: _isLoading ? null : register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: moneyLoverGreen,
                     foregroundColor: Colors.white,
@@ -167,10 +205,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     elevation: 5,
                     shadowColor: moneyLoverGreen.withOpacity(0.3),
                   ),
-                  child: Text(
-                      lang.getText("register_now").toUpperCase(),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          lang.getText("register_now").toUpperCase(),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                      ),
                 ),
               ),
               const SizedBox(height: 20),

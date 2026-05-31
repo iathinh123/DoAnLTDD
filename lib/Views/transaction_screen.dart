@@ -107,7 +107,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         backgroundColor: Colors.black,
         elevation: 0,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(120),
+          preferredSize: const Size.fromHeight(144),
           child: Column(
             children: [
               _buildSearchBar(),

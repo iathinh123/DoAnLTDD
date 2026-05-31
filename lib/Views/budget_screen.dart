@@ -410,12 +410,15 @@ class BudgetScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Đã tiêu: ${_formatMoney(budget.spent)}đ",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  Expanded(
+                    child: Text(
+                      "Đã tiêu: ${_formatMoney(budget.spent)}đ",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     "Còn: ${_formatMoney(budget.remaining)}đ",
                     style: TextStyle(
@@ -424,9 +427,14 @@ class BudgetScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  Text(
-                    "Hạn mức: ${_formatMoney(budget.limit)}đ",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Hạn mức: ${_formatMoney(budget.limit)}đ",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
