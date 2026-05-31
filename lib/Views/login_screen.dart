@@ -45,20 +45,36 @@ class _LoginScreenState extends State<LoginScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      //Lấy uid
-      String uid = userCredential.user!.uid;
 
-      //Đọc role từ Firestore
+      String uid = userCredential.user!.uid;
+      User? user = userCredential.user;
+
+      // =======================================================================
+      // XỬ LÝ ĐỒNG BỘ THÔNG TIN HIỂN THỊ LÊN FIRESTORE (KHÔNG ĐỔI CẤU TRÚC UID)
+      // =======================================================================
+      if (user != null) {
+        // Cập nhật thông tin vào collection 'NguoiDung' để đồng bộ với logic phân quyền của bạn
+        await FirebaseFirestore.instance.collection('NguoiDung').doc(uid).set({
+          "email": user.email,
+          "lastLogin": FieldValue.serverTimestamp(),
+          // Dùng SetOptions(merge: true) để nếu tài khoản đã được phân role trước đó,
+          // lệnh này sẽ chỉ bổ sung thêm email/tên chứ KHÔNG LÀM MẤT trường 'role' của bạn.
+          "name": user.email!.split('@')[0],
+        }, SetOptions(merge: true));
+      }
+      // =======================================================================
+
+      // Đọc role từ Firestore
       var doc = await FirebaseFirestore.instance
           .collection('NguoiDung')
           .doc(uid)
           .get();
 
       String role = doc.data()?['role'] ?? 'user';
-      //widget bị hủy (đang thao tác bỗng thoát) dừng ngay.
+
       if (!mounted) return;
 
-      //Chia trang theo role
+      // Chia trang theo role
       if (role == 'admin') {
         Navigator.pushReplacement(
           context,
@@ -86,7 +102,22 @@ class _LoginScreenState extends State<LoginScreen> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      // =======================================================================
+      // ĐỒNG BỘ THÔNG TIN KHI ĐĂNG NHẬP GOOGLE (LẤY ĐƯỢC TÊN THẬT TỪ GOOGLE)
+      // =======================================================================
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).set({
+          "email": user.email,
+          "name": user.displayName ?? user.email!.split('@')[0], // Ưu tiên lấy tên hiển thị của tài khoản Google
+          "lastLogin": FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+      // =======================================================================
+
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 const Color moneyLoverGreen = Color(0xFF2DB15D);
 
 class RegisterScreen extends StatefulWidget {
@@ -18,7 +19,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isLoading = false;
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -46,19 +46,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future register() async {
     final lang = Provider.of<LanguageProvider>(context, listen: false);
-    final name = nameController.text.trim();
 
-    if (emailController.text.trim().isEmpty ||
+    // 1. SỬA LỖI: Kiểm tra thêm trường tên không được để trống
+    if (nameController.text.trim().isEmpty ||
+        emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty ||
         confirmPasswordController.text.trim().isEmpty) {
       _showError(lang.getText("err_empty_field"));
-      return;
-    }
-
-    if (name.isEmpty) {
-      _showError(lang.languageCode == "vi"
-          ? "Vui lòng nhập họ và tên"
-          : "Please enter your full name");
       return;
     }
 
@@ -67,62 +61,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-
     try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+      // Đăng ký tài khoản trên Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      await credential.user?.updateDisplayName(name);
-      await credential.user?.reload();
+      String uid = userCredential.user!.uid;
 
-      final uid = credential.user!.uid;
+      // Lưu thông tin người dùng vào Firestore
       await FirebaseFirestore.instance
           .collection('NguoiDung')
           .doc(uid)
           .set({
-        'name': name,
+        'name': nameController.text.trim(),
         'email': emailController.text.trim(),
-        'avatarUrl': '',
+        'avatarUrl': 'URL',
         'role': 'user',
         'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(), // Thêm trường này để đồng bộ với cấu trúc Login
       });
 
       if (!mounted) return;
-      _isLoading = false;
       _showSuccess(lang.getText("register_success"));
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      setState(() => _isLoading = false);
-      String msg;
-      switch (e.code) {
-        case 'email-already-in-use':
-          msg = lang.languageCode == "vi"
-              ? "Email này đã được đăng ký"
-              : "Email already in use";
-          break;
-        case 'weak-password':
-          msg = lang.languageCode == "vi"
-              ? "Mật khẩu phải có ít nhất 6 ký tự"
-              : "Password must be at least 6 characters";
-          break;
-        case 'invalid-email':
-          msg = lang.languageCode == "vi"
-              ? "Email không hợp lệ"
-              : "Invalid email";
-          break;
-        default:
-          msg = lang.getText("err_invalid_login");
+      // 2. CẢI TIẾN: Báo lỗi thông minh theo mã lỗi của Firebase Auth thay vì ép một thông báo cố định
+      if (e.code == 'email-already-in-use') {
+        _showError("Email này đã được sử dụng bởi một tài khoản khác.");
+      } else if (e.code == 'weak-password') {
+        _showError("Mật khẩu quá yếu, vui lòng nhập tối thiểu 6 ký tự.");
+      } else if (e.code == 'invalid-email') {
+        _showError("Định dạng email không hợp lệ.");
+      } else {
+        _showError(e.message ?? lang.getText("err_invalid_login"));
       }
-      _showError(msg);
     } catch (e) {
-      setState(() => _isLoading = false);
-      _showError(lang.languageCode == "vi"
-          ? "Lỗi hệ thống: $e"
-          : "System error: $e");
+      _showError("Lỗi hệ thống: $e");
     }
   }
 
@@ -163,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: const TextStyle(color: Colors.grey, fontSize: 15),
               ),
               const SizedBox(height: 40),
-              _buildLabel(lang.getText("Username")),
+              _buildLabel("Họ và tên"),
               _buildInputBox(
                 controller: nameController,
                 hintText: "Đầy đủ họ và tên",
@@ -197,7 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : register,
+                  onPressed: register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: moneyLoverGreen,
                     foregroundColor: Colors.white,
@@ -205,19 +181,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     elevation: 5,
                     shadowColor: moneyLoverGreen.withOpacity(0.3),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          lang.getText("register_now").toUpperCase(),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
-                      ),
+                  child: Text(
+                      lang.getText("register_now").toUpperCase(),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

@@ -26,7 +26,6 @@ class BudgetController extends ChangeNotifier {
   List<Budget> get warningBudgets =>
       budgets.where((b) => b.isNearLimit || b.isOverLimit).toList();
 
-  // Lắng nghe realtime budgets
   void listenBudgets() {
     isLoading = true;
     notifyListeners();

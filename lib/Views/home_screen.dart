@@ -9,6 +9,11 @@ import 'expense_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'all_transaction_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../Services/gemini_service.dart';
+import 'AI_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -53,6 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
   double totalIncome = 0;
   List<TransactionModel> transactions = [];
   bool isBalanceVisible = true;
+  bool _showDetails = false;
+  String _withPerson = "";
+  String _location = "";
+  String _event = "";
+  bool _excludeFromReport = false;
 
   final amountController = TextEditingController();
   final noteController = TextEditingController();
@@ -151,36 +161,172 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _checkBudgetWarning(String category, double savedAmount) async {
+    if (savedAmount >= 0) return;
+
+    try {
+      final now = DateTime.now();
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .collection("budgets")
+          .where("month", isEqualTo: now.month)
+          .where("year", isEqualTo: now.year)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final categoryNorm = _normalize(category);
+
+      final matched = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final budgetCat = _normalize(data["category"] ?? "");
+        return budgetCat == categoryNorm;
+      }).toList();
+
+      if (matched.isEmpty) return;
+
+      final budgetData = matched.first.data();
+      double limit = (budgetData["limit"] as num).toDouble();
+      double spent = (budgetData["spent"] as num).toDouble();
+      spent += savedAmount.abs();
+      double percent = limit > 0 ? spent / limit : 0;
+
+      if (!mounted) return;
+
+      if (percent >= 1.0) {
+        _showBudgetAlert(
+          "🚨 Vượt ngân sách!",
+          "Bạn đã vượt hạn mức \"${budgetData['category']}\"\n"
+              "Đã chi: ${spent.toStringAsFixed(0)}đ / ${limit.toStringAsFixed(0)}đ",
+          Colors.red,
+        );
+      } else if (percent >= 0.8) {
+        _showBudgetAlert(
+          "⚠️ Sắp vượt ngân sách!",
+          "Ngân sách \"${budgetData['category']}\" đã dùng ${(percent * 100).toInt()}%\n"
+              "Còn lại: ${(limit - spent).toStringAsFixed(0)}đ",
+          Colors.orange,
+        );
+      }
+
+    } catch (e) {
+      print("checkBudget ERROR: $e");
+    }
+  }
+
+  String _normalize(String text) {
+    const vietnamese = 'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ';
+    const latin =      'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
+
+    String result = text.toLowerCase();
+    for (int i = 0; i < vietnamese.length; i++) {
+      result = result.replaceAll(vietnamese[i], latin[i]);
+    }
+    return result;
+  }
+
+  void _showBudgetAlert(String title, String message, Color color) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title, style: TextStyle(color: color, fontSize: 18)),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Đã hiểu", style: TextStyle(color: Colors.green)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => currentIndex = 2);
+            },
+            child: const Text("Xem ngân sách",
+                style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ================= LƯU GIAO DỊCH =================
   void _saveTransaction() async {
-    double amountValue = double.tryParse(amountController.text) ?? 0;
-    if (amountValue <= 0 || selectedCategory == "Chọn nhóm") return;
+    try {
+      double amountValue =
+          double.tryParse(amountController.text.trim()) ?? 0;
 
-    final docRef = FirebaseFirestore.instance
-        .collection("users")
-        .doc(userId)
-        .collection("transactions")
-        .doc();
+      if (amountValue <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng nhập số tiền")),
+        );
+        return;
+      }
 
-    final newTransaction = TransactionModel(
-      id: docRef.id,
-      type: selectedType,
-      category: selectedCategory,
-      amount: amountValue,
-      note: noteController.text,
-      date: selectedDate,
-    );
+      if (selectedCategory == "Chọn nhóm") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng chọn nhóm")),
+        );
+        return;
+      }
 
-    await docRef.set(newTransaction.toMap());
+      // Khoản chi => số âm
+      if (selectedType == 0) {
+        amountValue = -amountValue;
+      }
 
-    amountController.clear();
-    noteController.clear();
-    setState(() {
-      selectedCategory = "Chọn nhóm";
-      selectedDate = DateTime.now();
-    });
+      final docRef = FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .collection("transactions")
+          .doc();
 
-    if (mounted) Navigator.pop(context);
+      await docRef.set({
+        "type": selectedType,
+        "category": selectedCategory,
+        "amount": amountValue,
+        "note": noteController.text.trim(),
+        "date": Timestamp.fromDate(selectedDate),
+
+        // chi tiết
+        "withPerson": _withPerson,
+        "location": _location,
+        "event": _event,
+        "excludeFromReport": _excludeFromReport,
+      });
+      await _checkBudgetWarning(selectedCategory, amountValue);
+      amountController.clear();
+      noteController.clear();
+
+      setState(() {
+        selectedCategory = "Chọn nhóm";
+        selectedDate = DateTime.now();
+
+        _withPerson = "";
+        _location = "";
+        _event = "";
+        _excludeFromReport = false;
+        _showDetails = false;
+      });
+
+      if (mounted) Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã lưu giao dịch")),
+      );
+    } catch (e) {
+      print("LỖI SAVE: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Lỗi: $e")),
+      );
+    }
   }
 
   // ================= UI HELPERS =================
@@ -402,7 +548,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     displayList.addAll(defaultCategories[typeKey] ?? []);
 
-    // Chỉ lấy những nhóm có 'type' khớp với 'typeKey' hiện tại
     final filteredUserCats = userDefinedCategories
         .where((cat) => cat["type"] == typeKey)
         .map((cat) => cat["name"] as String)
@@ -437,7 +582,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   )),
 
-                  // Nút thêm nhóm mới luôn ở dưới cùng
                   ListTile(
                     leading: const Icon(Icons.add_circle_outline, color: Colors.green),
                     title: const Text("Thêm nhóm mới", style: TextStyle(color: Colors.green)),
@@ -455,6 +599,136 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<List<String>> _fetchPlacePredictions(String input) async {
+    // Thay API_KEY của bạn được cấp từ Google Cloud Console vào đây
+    const String apiKey = "YOUR_GOOGLE_MAPS_API_KEY";
+    final String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=vi&components=country:vn";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final predictions = data['predictions'] as List;
+        return predictions.map((p) => p['description'] as String).toList();
+      }
+    } catch (e) {
+      print("Lỗi gọi API địa điểm: $e");
+    }
+    return [];
+  }
+
+  void _showLocationPicker(Function setModalState) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: const Text("Địa điểm giao dịch", style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: TypeAheadField<String>(
+            // Cấu hình ô nhập liệu
+            builder: (context, controller, focusNode) {
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: "Nhập địa điểm (Ví dụ: BigC, Highlands...)",
+                  hintStyle: TextStyle(color: Colors.grey),
+                ),
+              );
+            },
+            // Hàm này sẽ tự động chạy và gọi API mỗi khi người dùng gõ chữ
+            suggestionsCallback: (searchPattern) async {
+              if (searchPattern.length < 3) return []; // Gõ trên 3 ký tự mới gọi API để tiết kiệm
+              return await _fetchPlacePredictions(searchPattern);
+            },
+            // Giao diện hiển thị từng dòng gợi ý trong danh sách đổ xuống
+            itemBuilder: (context, String prediction) {
+              return Container(
+                color: const Color(0xFF2C2C2E), // Đổi màu nền tối tại đây thay vì đặt trong ListTile
+                child: ListTile(
+                  leading: const Icon(Icons.location_on, color: Colors.green),
+                  title: Text(
+                    prediction,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              );
+            },
+            // Xử lý khi người dùng ấn chọn một địa điểm trong danh sách
+            onSelected: (String prediction) {
+              setModalState(() {
+                _location = prediction; // Gán địa điểm được chọn vào biến toàn cục
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showEventPicker(Function setModalState) {
+    // Danh sách sự kiện mẫu, bạn có thể tự định nghĩa thêm
+    final List<String> events = ["Du lịch hè", "Đám cưới", "Sinh nhật", "Tết 2026"];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text("Chọn sự kiện", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+          ...events.map((e) => ListTile(
+            title: Text(e, style: const TextStyle(color: Colors.white)),
+            onTap: () {
+              setModalState(() {
+                _event = e;
+              });
+              Navigator.pop(ctx);
+            },
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  void _showWithPersonPicker(Function setModalState) {
+    final personController = TextEditingController(text: _withPerson);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1C1E),
+        title: const Text("Đi cùng ai?", style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: TextField(
+          controller: personController,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Nhập tên người đi cùng...",
+            hintStyle: TextStyle(color: Colors.grey),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          TextButton(
+            onPressed: () {
+              setModalState(() {
+                _withPerson = personController.text;
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("Xác nhận", style: TextStyle(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddTaskSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -465,65 +739,219 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(builder: (context, setModalState) {
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Thêm giao dịch mới", style: TextStyle(color: Colors.white, fontSize: 18)),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _typeBtn("Khoản chi", 0, setModalState),
-                    const SizedBox(width: 10),
-                    _typeBtn("Khoản thu", 1, setModalState),
-                    const SizedBox(width: 10),
-                    _typeBtn("Vay/Nợ", 2, setModalState),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white, fontSize: 24),
-                  decoration: const InputDecoration(hintText: "Số tiền", hintStyle: TextStyle(color: Colors.grey)),
-                ),
-                ListTile(
-                  onTap: () => _showCategoryPicker(setModalState),
-                  leading: const Icon(Icons.category, color: Colors.white),
-                  title: Text(selectedCategory, style: const TextStyle(color: Colors.white)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                ),
-                ListTile(
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) setModalState(() => selectedDate = picked);
-                  },
-                  leading: const Icon(Icons.calendar_today, color: Colors.white),
-                  title: Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    onPressed: _saveTransaction,
-                    child: const Text("LƯU GIAO DỊCH", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Thêm giao dịch mới", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _typeBtn("Khoản chi", 0, setModalState),
+                      const SizedBox(width: 10),
+                      _typeBtn("Khoản thu", 1, setModalState),
+                      const SizedBox(width: 10),
+                      _typeBtn("Vay/Nợ", 2, setModalState),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+
+
+
+// ================= AMOUNT INPUT =================
+
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: "Số tiền",
+                      hintStyle: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+// ================= CATEGORY =================
+
+                  ListTile(
+                    onTap: () => _showCategoryPicker(setModalState),
+                    leading: const Icon(Icons.category, color: Colors.white),
+                    title: Text(
+                      selectedCategory,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+
+// ================= DATE =================
+
+                  ListTile(
+                    onTap: () async {
+
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+
+                      if (picked != null) {
+
+                        setModalState(() {
+
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+
+                    leading: const Icon(
+                      Icons.calendar_today,
+                      color: Colors.white,
+                    ),
+
+                    title: Text(
+                      "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+
+// ================= NOTE =================
+
+                  TextField(
+                    controller: noteController,
+                    style: const TextStyle(color: Colors.white),
+
+                    decoration: const InputDecoration(
+                      hintText: "Ghi chú",
+                      hintStyle: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+
+                  // ================= KHU VỰC CHI TIẾT ĐƯỢC MỞ RỘNG (GIAO DIỆN TỐI) =================
+                  if (_showDetails) ...[
+                    _buildDetailRow(
+                        Icons.people_outline,
+                        "Với",
+                        _withPerson.isEmpty ? "Gắn thẻ ai đó" : _withPerson,
+                            () => _showWithPersonPicker(setModalState) // Kết nối chức năng chọn người
+                    ),
+                    _buildDetailRow(
+                        Icons.location_on_outlined,
+                        "Đặt vị trí",
+                        _location.isEmpty ? "Thêm địa điểm" : _location,
+                            () => _showLocationPicker(setModalState) // Kết nối chức năng chọn vị trí
+                    ),
+                    _buildDetailRow(
+                        Icons.card_travel_outlined,
+                        "Chọn sự kiện",
+                        _event.isEmpty ? "Chuyến đi, đám cưới..." : _event,
+                            () => _showEventPicker(setModalState) // Kết nối chức năng chọn sự kiện
+                    ),
+                    _buildDetailRow(
+                        Icons.access_alarm,
+                        "Đặt nhắc nhở",
+                        "Không",
+                            () {
+                          // Có thể mở rộng tích hợp thư viện Local Notifications ở đây
+                        }
+                    ),
+
+                    // Ô hình ảnh hóa đơn
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: const Color(0xFF2C2C2E), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.add_photo_alternate_outlined, color: Colors.green),
+                          SizedBox(width: 12),
+                          Text("Thêm Hình Ảnh", style: TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+
+                    // Công tắc loại trừ báo cáo
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(color: const Color(0xFF2C2C2E), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Không tính vào báo cáo", style: TextStyle(color: Colors.white, fontSize: 14)),
+                          Switch(
+                            value: _excludeFromReport,
+                            activeColor: Colors.green,
+                            onChanged: (val) {
+                              setModalState(() => _excludeFromReport = val);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+
+                  // NÚT LƯU CHÍNH
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _saveTransaction,
+                      child: const Text("LƯU GIAO DỊCH", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           );
         });
       },
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String title, String value, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2E), // Màu xám tối nhẹ hơn màu nền gốc một chút
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+        leading: Icon(icon, color: Colors.grey[400], size: 22),
+        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(value, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+          ],
+        ),
+        onTap: onTap,
+      ),
     );
   }
 
@@ -614,6 +1042,7 @@ class _HomeScreenState extends State<HomeScreen> {
           TransactionScreen(transactions: transactions),
           BudgetScreen(),
           const AccountScreen(),
+          const AIScreen(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -633,6 +1062,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: "Giao dịch"),
           BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: "Ngân sách"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Tài khoản"),
+          BottomNavigationBarItem(icon: Icon(Icons.smart_toy), label: "AI"),
         ],
       ),
     );
