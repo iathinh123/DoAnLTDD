@@ -9,11 +9,9 @@ import 'expense_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'all_transaction_screen.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter_typeahead/flutter_typeahead.dart';
-import '../Services/gemini_service.dart';
 import 'AI_screen.dart';
+import 'addfriend_view/addfriend_screen.dart';
+import 'group_jar_view/group_jar_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -59,10 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<TransactionModel> transactions = [];
   bool isBalanceVisible = true;
   bool _showDetails = false;
-  String _withPerson = "";
-  String _location = "";
-  String _event = "";
-  bool _excludeFromReport = false;
 
   final amountController = TextEditingController();
   final noteController = TextEditingController();
@@ -91,7 +85,24 @@ class _HomeScreenState extends State<HomeScreen> {
     listenToTransactions();
     loadUserCategories();
   }
-
+  //Đếm bạn
+  Stream<int> getFriendCount() {
+    return FirebaseFirestore.instance
+        .collection("NguoiDung")
+        .doc(userId)
+        .collection("friends")
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+  //Đếm lời mời kết bạn
+  Stream<int> getFriendRequestCount() {
+    return FirebaseFirestore.instance
+        .collection("NguoiDung")
+        .doc(userId)
+        .collection("received_requests")
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
   // ================= LẮNG NGHE DỮ LIỆU REAL-TIME =================
   void listenToTransactions() {
     FirebaseFirestore.instance
@@ -294,11 +305,6 @@ class _HomeScreenState extends State<HomeScreen> {
         "note": noteController.text.trim(),
         "date": Timestamp.fromDate(selectedDate),
 
-        // chi tiết
-        "withPerson": _withPerson,
-        "location": _location,
-        "event": _event,
-        "excludeFromReport": _excludeFromReport,
       });
       await _checkBudgetWarning(selectedCategory, amountValue);
       amountController.clear();
@@ -308,10 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedCategory = "Chọn nhóm";
         selectedDate = DateTime.now();
 
-        _withPerson = "";
-        _location = "";
-        _event = "";
-        _excludeFromReport = false;
         _showDetails = false;
       });
 
@@ -419,7 +421,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-
                   Text(
                     formatMoney(t.amount),
                     style: TextStyle(
@@ -599,136 +600,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<List<String>> _fetchPlacePredictions(String input) async {
-    // Thay API_KEY của bạn được cấp từ Google Cloud Console vào đây
-    const String apiKey = "YOUR_GOOGLE_MAPS_API_KEY";
-    final String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$apiKey&language=vi&components=country:vn";
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final predictions = data['predictions'] as List;
-        return predictions.map((p) => p['description'] as String).toList();
-      }
-    } catch (e) {
-      print("Lỗi gọi API địa điểm: $e");
-    }
-    return [];
-  }
-
-  void _showLocationPicker(Function setModalState) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C1E),
-        title: const Text("Địa điểm giao dịch", style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: TypeAheadField<String>(
-            // Cấu hình ô nhập liệu
-            builder: (context, controller, focusNode) {
-              return TextField(
-                controller: controller,
-                focusNode: focusNode,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: "Nhập địa điểm (Ví dụ: BigC, Highlands...)",
-                  hintStyle: TextStyle(color: Colors.grey),
-                ),
-              );
-            },
-            // Hàm này sẽ tự động chạy và gọi API mỗi khi người dùng gõ chữ
-            suggestionsCallback: (searchPattern) async {
-              if (searchPattern.length < 3) return []; // Gõ trên 3 ký tự mới gọi API để tiết kiệm
-              return await _fetchPlacePredictions(searchPattern);
-            },
-            // Giao diện hiển thị từng dòng gợi ý trong danh sách đổ xuống
-            itemBuilder: (context, String prediction) {
-              return Container(
-                color: const Color(0xFF2C2C2E), // Đổi màu nền tối tại đây thay vì đặt trong ListTile
-                child: ListTile(
-                  leading: const Icon(Icons.location_on, color: Colors.green),
-                  title: Text(
-                    prediction,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              );
-            },
-            // Xử lý khi người dùng ấn chọn một địa điểm trong danh sách
-            onSelected: (String prediction) {
-              setModalState(() {
-                _location = prediction; // Gán địa điểm được chọn vào biến toàn cục
-              });
-              Navigator.pop(context);
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showEventPicker(Function setModalState) {
-    // Danh sách sự kiện mẫu, bạn có thể tự định nghĩa thêm
-    final List<String> events = ["Du lịch hè", "Đám cưới", "Sinh nhật", "Tết 2026"];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("Chọn sự kiện", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          ...events.map((e) => ListTile(
-            title: Text(e, style: const TextStyle(color: Colors.white)),
-            onTap: () {
-              setModalState(() {
-                _event = e;
-              });
-              Navigator.pop(ctx);
-            },
-          )).toList(),
-        ],
-      ),
-    );
-  }
-
-  void _showWithPersonPicker(Function setModalState) {
-    final personController = TextEditingController(text: _withPerson);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C1E),
-        title: const Text("Đi cùng ai?", style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: TextField(
-          controller: personController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: "Nhập tên người đi cùng...",
-            hintStyle: TextStyle(color: Colors.grey),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
-          TextButton(
-            onPressed: () {
-              setModalState(() {
-                _withPerson = personController.text;
-              });
-              Navigator.pop(context);
-            },
-            child: const Text("Xác nhận", style: TextStyle(color: Colors.green)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showAddTaskSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -841,73 +712,62 @@ class _HomeScreenState extends State<HomeScreen> {
                       hintStyle: TextStyle(color: Colors.grey),
                     ),
                   ),
+                  const SizedBox(height: 16),
 
-                  // ================= KHU VỰC CHI TIẾT ĐƯỢC MỞ RỘNG (GIAO DIỆN TỐI) =================
-                  if (_showDetails) ...[
-                    _buildDetailRow(
-                        Icons.people_outline,
-                        "Với",
-                        _withPerson.isEmpty ? "Gắn thẻ ai đó" : _withPerson,
-                            () => _showWithPersonPicker(setModalState) // Kết nối chức năng chọn người
-                    ),
-                    _buildDetailRow(
-                        Icons.location_on_outlined,
-                        "Đặt vị trí",
-                        _location.isEmpty ? "Thêm địa điểm" : _location,
-                            () => _showLocationPicker(setModalState) // Kết nối chức năng chọn vị trí
-                    ),
-                    _buildDetailRow(
-                        Icons.card_travel_outlined,
-                        "Chọn sự kiện",
-                        _event.isEmpty ? "Chuyến đi, đám cưới..." : _event,
-                            () => _showEventPicker(setModalState) // Kết nối chức năng chọn sự kiện
-                    ),
-                    _buildDetailRow(
-                        Icons.access_alarm,
-                        "Đặt nhắc nhở",
-                        "Không",
-                            () {
-                          // Có thể mở rộng tích hợp thư viện Local Notifications ở đây
-                        }
-                    ),
-
-                    // Ô hình ảnh hóa đơn
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: const Color(0xFF2C2C2E), borderRadius: BorderRadius.circular(12)),
+                  GestureDetector(
+                    onTap: () {
+                      setModalState(() {
+                        _showDetails = !_showDetails;
+                      });
+                    },
+                    child: Center(
                       child: Row(
-                        children: const [
-                          Icon(Icons.add_photo_alternate_outlined, color: Colors.green),
-                          SizedBox(width: 12),
-                          Text("Thêm Hình Ảnh", style: TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-
-                    // Công tắc loại trừ báo cáo
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFF2C2C2E), borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text("Không tính vào báo cáo", style: TextStyle(color: Colors.white, fontSize: 14)),
-                          Switch(
-                            value: _excludeFromReport,
-                            activeColor: Colors.green,
-                            onChanged: (val) {
-                              setModalState(() => _excludeFromReport = val);
-                            },
+
+                          Text(
+                            _showDetails
+                                ? "Ẩn bớt chi tiết"
+                                : "Hiện chi tiết",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          const SizedBox(width: 4),
+
+                          Icon(
+                            _showDetails
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: Colors.green,
+                            size: 18,
                           ),
                         ],
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 10),
+                  // ================= KHU VỰC CHI TIẾT ĐƯỢC MỞ RỘNG (GIAO DIỆN TỐI) =================
+                  if (_showDetails) ...[
+                    _buildDetailRow(
+                      Icons.people_outline,
+                      "Lập hũ nhóm",
+                      "Thêm bạn bè",
+                          () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GroupJarScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
-
                   const SizedBox(height: 20),
-
                   // NÚT LƯU CHÍNH
                   SizedBox(
                     width: double.infinity,
@@ -1015,6 +875,98 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddFriendScreen(),
+                        ),
+                      );
+                    },
+                    child: StreamBuilder<int>(
+                      stream: getFriendRequestCount(),
+                      builder: (context, requestSnapshot) {
+
+                        final requestCount =
+                            requestSnapshot.data ?? 0;
+
+                        return Stack(
+                          children: [
+                            _buildCard(
+                              title: "Bạn bè",
+                              action: "Thêm bạn",
+                              child: StreamBuilder<int>(
+                                stream: getFriendCount(),
+                                builder: (context, snapshot) {
+
+                                  int count =
+                                      snapshot.data ?? 0;
+
+                                  return Row(
+                                    children: [
+                                      const CircleAvatar(
+                                        backgroundColor: Colors.blue,
+                                        child: Icon(
+                                          Icons.people,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 15),
+
+                                      const Expanded(
+                                        child: Text(
+                                          "Danh sách bạn bè",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+
+                                      Text(
+                                        "$count",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+
+                            if (requestCount > 0)
+                              Positioned(
+                                top: -5,
+                                right: 1,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    requestCount > 99
+                                        ? "99+"
+                                        : "$requestCount",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   // Báo cáo
                   _buildCard(
                     title: "Báo cáo tháng này",
@@ -1045,7 +997,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const AIScreen(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: currentIndex == 4
+      ? null
+      : FloatingActionButton(
         backgroundColor: Colors.green,
         onPressed: () => _showAddTaskSheet(context),
         child: const Icon(Icons.add, color: Colors.white),

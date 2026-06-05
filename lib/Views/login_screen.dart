@@ -53,13 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
       // XỬ LÝ ĐỒNG BỘ THÔNG TIN HIỂN THỊ LÊN FIRESTORE (KHÔNG ĐỔI CẤU TRÚC UID)
       // =======================================================================
       if (user != null) {
-        // Cập nhật thông tin vào collection 'NguoiDung' để đồng bộ với logic phân quyền của bạn
-        await FirebaseFirestore.instance.collection('NguoiDung').doc(uid).set({
+        final userDoc = FirebaseFirestore.instance
+            .collection('NguoiDung')
+            .doc(user.uid);
+        await userDoc.set({
           "email": user.email,
+          "name": user.displayName ??
+              user.email!.split('@')[0],
+          "avatarUrl": user.photoURL ?? "",
+          "role": "user",
+          "createdAt": FieldValue.serverTimestamp(),
           "lastLogin": FieldValue.serverTimestamp(),
-          // Dùng SetOptions(merge: true) để nếu tài khoản đã được phân role trước đó,
-          // lệnh này sẽ chỉ bổ sung thêm email/tên chứ KHÔNG LÀM MẤT trường 'role' của bạn.
-          "name": user.email!.split('@')[0],
         }, SetOptions(merge: true));
       }
       // =======================================================================
@@ -106,13 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
       UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       User? user = userCredential.user;
 
-      // =======================================================================
       // ĐỒNG BỘ THÔNG TIN KHI ĐĂNG NHẬP GOOGLE (LẤY ĐƯỢC TÊN THẬT TỪ GOOGLE)
-      // =======================================================================
       if (user != null) {
         await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).set({
           "email": user.email,
           "name": user.displayName ?? user.email!.split('@')[0], // Ưu tiên lấy tên hiển thị của tài khoản Google
+          "avatarUrl": user.photoURL ?? "",
+          "role": "user",
           "lastLogin": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
