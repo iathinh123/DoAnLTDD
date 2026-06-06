@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class GeminiService {
 
-  static const String apiKey = "AIzaSyC1X-szcsThwq4pWp46sEHI-2MTzXnY8xw";
+  static const String apiKey = "AQ.Ab8RN6JKW2ezCtYMuXWWbyq7QMs8z3gmOTef5OgvvIkViVmuVw";
   static const String _baseUrl =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
 
@@ -207,6 +207,49 @@ Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, dùng emoji.
 
       return "Lỗi ${response.statusCode}";
 
+    } catch (e) {
+      return "Lỗi kết nối: $e";
+    }
+  }
+
+  static Future<String> analyzeSavingsGoal(
+      String goalData, String financialData) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$_baseUrl$apiKey"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "contents": [
+            {
+              "parts": [
+                {
+                  "text": """
+Bạn là chuyên gia tài chính cá nhân.
+
+$financialData
+
+$goalData
+
+Hãy:
+1. Đánh giá khả năng đạt mục tiêu
+2. Tính số tiền cần tiết kiệm mỗi tháng/tuần
+3. Gợi ý cách đạt mục tiêu nhanh hơn
+4. Động viên người dùng
+
+Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, dùng emoji.
+"""
+                }
+              ]
+            }
+          ]
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["candidates"][0]["content"]["parts"][0]["text"];
+      }
+      return "Lỗi ${response.statusCode}";
     } catch (e) {
       return "Lỗi kết nối: $e";
     }

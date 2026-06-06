@@ -837,7 +837,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             children: [
                               Text(
-                                formatMoney(balance),
+                                isBalanceVisible ? formatMoney(balance) : "********",
                                 style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                               IconButton(

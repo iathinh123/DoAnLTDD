@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Services/gemini_service.dart';
-
+import 'savings_goal_screen.dart';
 class AIScreen extends StatefulWidget {
   const AIScreen({super.key});
 
@@ -153,7 +153,6 @@ class _AIScreenState extends State<AIScreen> {
         chatHistory.add({"role": "model", "parts": [{"text": reply}]});
 
       } else {
-        // Câu hỏi thường
         chatHistory.add({
           "role": "user",
           "parts": [{"text": text}]
@@ -173,6 +172,7 @@ class _AIScreenState extends State<AIScreen> {
       _scrollToBottom();
     }
   }
+
 
   Future<void> _syncBudgetSpent(String category) async {
     try {
@@ -349,6 +349,7 @@ class _AIScreenState extends State<AIScreen> {
     }
   }
 
+
   Widget _buildMessage(Map<String, String> msg) {
     final isUser = msg["role"] == "user";
     return Align(
@@ -395,6 +396,25 @@ class _AIScreenState extends State<AIScreen> {
     );
   }
 
+  Widget _buildNavigateSuggestion(String text, Widget screen) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => screen),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.amber.withOpacity(0.4)),
+        ),
+        child: Text(text, style: const TextStyle(color: Colors.white70)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -418,6 +438,14 @@ class _AIScreenState extends State<AIScreen> {
               });
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.savings, color: Colors.amber),
+            tooltip: "Mục tiêu tiết kiệm",
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SavingsGoalScreen()),
+            ),
+          ),
         ],
       ),
       body: Column(
@@ -439,6 +467,10 @@ class _AIScreenState extends State<AIScreen> {
                     _buildSuggestion("📊 Phân tích chi tiêu tháng này"),
                     _buildSuggestion("💡 Tôi nên cắt giảm chi tiêu ở đâu?"),
                     _buildSuggestion("🎯 Lập kế hoạch tiết kiệm cho tôi"),
+                    _buildNavigateSuggestion(
+                      "🏦 Xem mục tiêu tiết kiệm",
+                      const SavingsGoalScreen(),
+                    ),
                   ],
                 ),
               ),
