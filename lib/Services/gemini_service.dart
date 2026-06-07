@@ -3,9 +3,37 @@ import 'package:http/http.dart' as http;
 
 class GeminiService {
 
-  static const String apiKey = "AQ.Ab8RN6JKW2ezCtYMuXWWbyq7QMs8z3gmOTef5OgvvIkViVmuVw";
+  static const String apiKey =
+      "AQ.Ab8RN6IP1-i1DaTKWi0XFfV--3AmUdsTozjxJAua8fN5DM9Olg";
+
   static const String _baseUrl =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+
+  static Future<http.Response?> _postWithRetry(
+      String url,
+      Map<String, dynamic> body,
+      ) async {
+    try {
+      print("KEY = $apiKey");
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      print("================================");
+      print("STATUS: ${response.statusCode}");
+      print(response.body);
+      print("================================");
+
+      return response;
+    } catch (e) {
+      print("HTTP ERROR: $e");
+      return null;
+    }
+  }
 
   static Future<Map<String, dynamic>?> analyzeTransaction(
       String text,
@@ -25,10 +53,9 @@ class GeminiService {
     String categoryText = allCategories.map((e) => "- $e").join("\n");
 
     try {
-      final response = await http.post(
-        Uri.parse("$_baseUrl$apiKey"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
           "contents": [
             {
               "parts": [
@@ -73,10 +100,10 @@ $text
               ]
             }
           ]
-        }),
+        },
       );
 
-      if (response.statusCode != 200) return null;
+      if (response == null || response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body);
       String rawText = data['candidates'][0]['content']['parts'][0]['text'];
@@ -97,10 +124,10 @@ $text
 
   static Future<String> askAI(String message) async {
     try {
-      final response = await http.post(
-        Uri.parse("$_baseUrl$apiKey"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      print("KEY = $apiKey");
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
           "contents": [
             {
               "parts": [
@@ -108,12 +135,13 @@ $text
                   "text": """
 Bạn là trợ lý AI tài chính cá nhân.
 
-Hãy:
-- trả lời ngắn gọn
-- dễ hiểu
-- bằng tiếng Việt
-- thân thiện
-- đưa lời khuyên tài chính hợp lý
+QUY TẮC:
+- Luôn trả lời bằng tiếng Việt.
+- Thân thiện, ngắn gọn, dễ hiểu.
+- Nếu câu hỏi liên quan đến tài chính, chi tiêu, tiết kiệm hoặc đầu tư thì trả lời trực tiếp.
+- Nếu câu hỏi KHÔNG liên quan đến tài chính, vẫn trả lời bình thường nhưng phải khéo léo liên hệ đến quản lý chi tiêu, tiết kiệm hoặc tài chính cá nhân.
+- Không bao giờ từ chối chỉ vì câu hỏi không thuộc lĩnh vực tài chính.
+- Luôn cố gắng đưa ra một lời khuyên tài chính ngắn ở cuối câu trả lời nếu phù hợp.
 
 Câu hỏi:
 $message
@@ -122,18 +150,31 @@ $message
               ]
             }
           ]
-        }),
+        },
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data["candidates"][0]["content"]["parts"][0]["text"];
+      if (response == null) {
+        return " Không thể kết nối tới Gemini.";
       }
 
-      return "Lỗi ${response.statusCode}";
+      if (response.statusCode == 429) {
+        return "Đã vượt giới hạn Gemini miễn phí. Vui lòng đợi vài phút rồi thử lại.";
+      }
 
+      if (response.statusCode != 200) {
+        return "Lỗi API (${response.statusCode})";
+      }
+
+      final data = jsonDecode(response.body);
+
+      if (data["candidates"] == null ||
+          data["candidates"].isEmpty) {
+        return "Gemini không trả về dữ liệu.";
+      }
+
+      return data["candidates"][0]["content"]["parts"][0]["text"];
     } catch (e) {
-      return "Lỗi kết nối: $e";
+      return "Lỗi: $e";
     }
   }
 
@@ -141,21 +182,32 @@ $message
       List<Map<String, dynamic>> history) async {
 
     try {
-      final response = await http.post(
-        Uri.parse("$_baseUrl$apiKey"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      print("KEY = $apiKey");
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
           "system_instruction": {
             "parts": [
               {
-                "text": "Bạn là trợ lý AI tài chính cá nhân. Trả lời ngắn gọn, dễ hiểu, bằng tiếng Việt, thân thiện. Khi được cung cấp dữ liệu tài chính thực tế, hãy dùng đúng số liệu đó để trả lời."
+                "text": """
+Bạn là trợ lý AI tài chính cá nhân.
+
+Quy tắc:
+- Luôn trả lời bằng tiếng Việt.
+- Trả lời tự nhiên như một chatbot thông minh.
+- Nếu câu hỏi liên quan đến tài chính thì trả lời đầy đủ.
+- Nếu không liên quan đến tài chính thì vẫn trả lời bình thường, sau đó liên hệ nhẹ nhàng đến quản lý chi tiêu, tiết kiệm hoặc ngân sách cá nhân.
+- Không được trả lời rằng bạn chỉ hỗ trợ tài chính.
+- Giữ giọng điệu thân thiện và tích cực.
+"""
               }
             ]
           },
           "contents": history,
-        }),
+        },
       );
 
+      if (response == null) return "Server đang bận, thử lại sau!";
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data["candidates"][0]["content"]["parts"][0]["text"];
@@ -172,10 +224,9 @@ $message
       String financialContext) async {
 
     try {
-      final response = await http.post(
-        Uri.parse("$_baseUrl$apiKey"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
           "contents": [
             {
               "parts": [
@@ -197,15 +248,20 @@ Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, dùng emoji.
               ]
             }
           ]
-        }),
+        },
       );
 
+      if (response == null) return "Server đang bận, thử lại sau!";
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data["candidates"][0]["content"]["parts"][0]["text"];
       }
 
-      return "Lỗi ${response.statusCode}";
+      return """
+Status: ${response.statusCode}
+
+${response.body}
+""";
 
     } catch (e) {
       return "Lỗi kết nối: $e";
@@ -215,10 +271,9 @@ Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, dùng emoji.
   static Future<String> analyzeSavingsGoal(
       String goalData, String financialData) async {
     try {
-      final response = await http.post(
-        Uri.parse("$_baseUrl$apiKey"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
           "contents": [
             {
               "parts": [
@@ -242,14 +297,72 @@ Trả lời bằng tiếng Việt, ngắn gọn, thân thiện, dùng emoji.
               ]
             }
           ]
-        }),
+        },
       );
 
+      if (response == null) return "Server đang bận, thử lại sau!";
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data["candidates"][0]["content"]["parts"][0]["text"];
       }
-      return "Lỗi ${response.statusCode}";
+
+      return """
+Status: ${response.statusCode}
+
+${response.body}
+""";
+
+    } catch (e) {
+      return "Lỗi kết nối: $e";
+    }
+  }
+
+  static Future<String> predictEndOfMonth(
+      String currentMonthData, String lastMonthData) async {
+    try {
+      final response = await _postWithRetry(
+        "$_baseUrl$apiKey",
+        {
+          "contents": [
+            {
+              "parts": [
+                {
+                  "text": """
+Bạn là chuyên gia tài chính cá nhân.
+
+Dữ liệu tháng trước:
+$lastMonthData
+
+Dữ liệu tháng này (chưa kết thúc):
+$currentMonthData
+
+Hãy:
+1. Dự đoán tổng chi tiêu cuối tháng này dựa trên xu hướng
+2. So sánh với tháng trước (nhiều hơn hay ít hơn, bao nhiêu %)
+3. Điểm cần chú ý
+4. Lời khuyên cụ thể
+
+Trả lời bằng tiếng Việt, ngắn gọn, dùng emoji.
+"""
+                }
+              ]
+            }
+          ]
+        },
+      );
+
+      if (response == null) return "Server đang bận, thử lại sau!";
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["candidates"][0]["content"]["parts"][0]["text"];
+      }
+
+      return """
+Status: ${response.statusCode}
+
+${response.body}
+""";
+
     } catch (e) {
       return "Lỗi kết nối: $e";
     }
