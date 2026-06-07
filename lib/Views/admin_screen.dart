@@ -16,7 +16,7 @@ class _AdminScreenState extends State<AdminScreen>{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Hello World', style: TextStyle(fontSize: 20)),
+            Text('Hello World', style: TextStyle(fontSize: 20, color: Theme.of(context).textTheme.bodyMedium?.color)),
             SizedBox(height: 20),
             _buildLogoutButton(context),
           ],

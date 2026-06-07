@@ -61,12 +61,12 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
       context: context,
       builder: (_) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16)),
-          title: const Text(
+          title: Text(
             "Nạp tiền vào hũ",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold),
           ),
           content: TextField(
             controller: amountController,
@@ -118,18 +118,17 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Nền tối sâu hơn
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           "Chi tiết hũ nhóm",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+            iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyMedium?.color),
         actions: [
           IconButton(
-            icon: const Icon(Icons.people_alt_outlined, color: Colors.white),
+            icon: Icon(Icons.people_alt_outlined, color: Theme.of(context).textTheme.bodyMedium?.color),
             onPressed: () {
               Navigator.push(
                 context,
@@ -162,7 +161,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(color: Colors.black, blurRadius: 8, offset: const Offset(0, 4))
@@ -177,7 +176,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                         Expanded(
                           child: Text(
                             jarData["name"] ?? "",
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ),
                         Container(
@@ -203,7 +202,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: progress > 1 ? 1 : progress,
-                        backgroundColor: Colors.grey[800],
+                        backgroundColor: Theme.of(context).dividerColor.withOpacity(0.3),
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                         minHeight: 8,
                       ),
@@ -214,7 +213,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                       children: [
                         Text(
                           "${currentAmount.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ",
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         Text(
                           "Mục tiêu: ${target.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ",
@@ -320,8 +319,8 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                                       children: [
                                         Text(
                                           data["text"] ?? "Có thành viên vừa nạp tiền",
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                                    color: Theme.of(context).textTheme.bodyMedium?.color,
                                             fontSize: 13.5,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -403,7 +402,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
               ),
               Container(
                 padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 20), // Thừa khoảng trống cho tai thỏ/đáy màn hình vuốt
-                color: const Color(0xFF1E1E1E),
+                color: Theme.of(context).cardColor,
                 child: Row(
                   children: [
                     IconButton(
@@ -421,7 +420,7 @@ class _GroupJarDetailScreenState extends State<GroupJarDetailScreen> {
                           hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           filled: true,
-                          fillColor: const Color(0xFF2C2C2E),
+                          fillColor: Theme.of(context).colorScheme.surfaceVariant,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,

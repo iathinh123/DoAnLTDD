@@ -70,7 +70,7 @@ class _ExpenseChartState extends State<ExpenseChart> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -80,10 +80,10 @@ class _ExpenseChartState extends State<ExpenseChart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Chi tiêu theo tuần",
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 15,
                       fontWeight: FontWeight.w600),
                 ),
@@ -150,14 +150,14 @@ class _ExpenseChartState extends State<ExpenseChart> {
                     drawVerticalLine: false,
                     horizontalInterval: maxVal / 3,
                     getDrawingHorizontalLine: (value) => FlLine(
-                      color: Colors.white.withOpacity(0.06),
+                      color: Theme.of(context).dividerColor.withOpacity(0.3),
                       strokeWidth: 1,
                     ),
                   ),
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (group) => const Color(0xFF2C2C2E),
+                      getTooltipColor: (group) => Theme.of(context).colorScheme.surfaceVariant,
                       tooltipRoundedRadius: 8,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
@@ -225,7 +225,7 @@ class _ExpenseChartState extends State<ExpenseChart> {
                             child: Text(
                               days[index],
                               style: TextStyle(
-                                color: isToday ? Colors.white : Colors.grey,
+                                color: isToday ? Theme.of(context).textTheme.bodyMedium?.color : Colors.grey,
                                 fontSize: 11,
                                 fontWeight: isToday
                                     ? FontWeight.bold
@@ -277,7 +277,7 @@ class _ExpenseChartState extends State<ExpenseChart> {
                             show: isToday,
                             toY: maxPositive > 0 ? maxPositive * 1.4 : maxVal * 0.3,
                             fromY: maxNegative > 0 ? -maxNegative * 1.4 : -maxVal * 0.3,
-                            color: Colors.white.withOpacity(0.05),
+                            color: Theme.of(context).dividerColor.withOpacity(0.3),
                           ),
                         ),
                       ],

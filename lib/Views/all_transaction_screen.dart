@@ -58,15 +58,14 @@ class AllTransactionsScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
         ),
-        title: const Text(
+        title: Text(
           "Tất cả giao dịch",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
         ),
       ),
       body: ListView(
@@ -96,7 +95,7 @@ class AllTransactionsScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -116,8 +115,8 @@ class AllTransactionsScreen extends StatelessWidget {
                           children: [
                             Text(
                               t.category,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
                                 fontSize: 16,
                               ),
                             ),

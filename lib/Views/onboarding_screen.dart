@@ -44,7 +44,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -55,9 +54,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               const Icon(Icons.account_balance_wallet_rounded, color: moneyLoverGreen, size: 28),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 "Wallet",
-                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1),
               ),
             ],
           ),
@@ -97,28 +96,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildLanguageButton(LanguageProvider lang) {
     return PopupMenuButton<String>(
-      color: const Color(0xFF1E1E1E),
+      color: Theme.of(context).cardColor,
       onSelected: (value) => lang.changeLanguage(value),
       offset: const Offset(0, 45),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: "vi",
           child: Row(
             children: [
-              Icon(Icons.language, color: moneyLoverGreen, size: 18),
-              SizedBox(width: 10),
-              Text("Tiếng Việt", style: TextStyle(color: Colors.white)),
+              const Icon(Icons.language, color: moneyLoverGreen, size: 18),
+              const SizedBox(width: 10),
+              Text("Tiếng Việt", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: "en",
           child: Row(
             children: [
-              Icon(Icons.language, color: moneyLoverGreen, size: 18),
-              SizedBox(width: 10),
-              Text("English", style: TextStyle(color: Colors.white)),
+              const Icon(Icons.language, color: moneyLoverGreen, size: 18),
+              const SizedBox(width: 10),
+              Text("English", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             ],
           ),
         ),
@@ -126,9 +125,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
         ),
         child: Row(
           children: [
@@ -136,9 +135,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(width: 6),
             Text(
               lang.languageCode == 'vi' ? "TIẾNG VIỆT" : "ENGLISH",
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13, fontWeight: FontWeight.bold),
             ),
-            const Icon(Icons.arrow_drop_down, color: Colors.white54, size: 20),
+            Icon(Icons.arrow_drop_down, color: Theme.of(context).textTheme.bodySmall?.color, size: 20),
           ],
         ),
       ),
@@ -156,9 +155,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               height: size.height * 0.35,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
               ),
               child: Icon(
                 icon,
@@ -170,9 +169,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
-                color: Colors.white,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
               ),
@@ -195,7 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           height: 8,
           width: _currentPage == index ? 20 : 8,
           decoration: BoxDecoration(
-            color: _currentPage == index ? moneyLoverGreen : Colors.grey[700],
+            color: _currentPage == index ? moneyLoverGreen : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         ),

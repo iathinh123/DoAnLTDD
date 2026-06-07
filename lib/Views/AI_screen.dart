@@ -361,7 +361,7 @@ class _AIScreenState extends State<AIScreen> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isUser ? Colors.green : const Color(0xFF2C2C2E),
+          color: isUser ? Colors.green : Theme.of(context).colorScheme.surfaceVariant,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -371,7 +371,7 @@ class _AIScreenState extends State<AIScreen> {
         ),
         child: Text(
           msg["text"] ?? "",
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15),
         ),
       ),
     );
@@ -387,11 +387,11 @@ class _AIScreenState extends State<AIScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 32),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.green.withOpacity(0.4)),
         ),
-        child: Text(text, style: const TextStyle(color: Colors.white70)),
+        child: Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
       ),
     );
   }
@@ -406,11 +406,11 @@ class _AIScreenState extends State<AIScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 32),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.amber.withOpacity(0.4)),
         ),
-        child: Text(text, style: const TextStyle(color: Colors.white70)),
+        child: Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
       ),
     );
   }
@@ -418,11 +418,10 @@ class _AIScreenState extends State<AIScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text("AI Assistant",
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text("AI Assistant",
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
         actions: [
           IconButton(
             icon: const Icon(Icons.bar_chart, color: Colors.green),
@@ -458,9 +457,9 @@ class _AIScreenState extends State<AIScreen> {
                   children: [
                     const Icon(Icons.smart_toy, color: Colors.green, size: 60),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       "Xin chào! Tôi có thể giúp gì cho bạn?",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 16),
                     ),
                     const SizedBox(height: 20),
                     _buildSuggestion("🍜 ăn cơm 50k"),
@@ -489,7 +488,7 @@ class _AIScreenState extends State<AIScreen> {
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2C2C2E),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Row(
@@ -518,14 +517,14 @@ class _AIScreenState extends State<AIScreen> {
 
           Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-            color: const Color(0xFF1C1C1E),
+            color: Theme.of(context).cardColor,
             child: SafeArea(
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: aiController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                       maxLines: null,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => isLoading ? null : sendMessage(),
@@ -553,8 +552,8 @@ class _AIScreenState extends State<AIScreen> {
                         color: isLoading ? Colors.grey : Colors.green,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.send,
-                          color: Colors.white, size: 20),
+                      child: Icon(Icons.send,
+                          color: Theme.of(context).textTheme.bodyMedium?.color, size: 20),
                     ),
                   ),
                 ],

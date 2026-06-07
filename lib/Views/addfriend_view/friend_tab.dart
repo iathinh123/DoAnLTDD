@@ -22,10 +22,10 @@ class FriendsTab extends StatelessWidget {
         final friends = snapshot.data!.docs;
 
         if (friends.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               "Chưa có bạn bè",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
             ),
           );
         }
@@ -37,7 +37,7 @@ class FriendsTab extends StatelessWidget {
             final friend = friends[index].data() as Map<String, dynamic>;
             final friendUid = friends[index].id;
             return Card(
-              color: const Color(0xFF1E1E1E),
+              color: Theme.of(context).cardColor,
               margin: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 6,

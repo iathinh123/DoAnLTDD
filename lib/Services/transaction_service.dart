@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/transaction_model.dart';
 
 class TransactionService {
-  final CollectionReference _transactionsRef =
-  FirebaseFirestore.instance.collection('transactions');
+  String? get _uid => FirebaseAuth.instance.currentUser?.uid;
+
+  CollectionReference get _transactionsRef =>
+      FirebaseFirestore.instance.collection('users').doc(_uid).collection('transactions');
 
   // Thêm giao dịch
   Future<void> addTransaction(TransactionModel t) async {
@@ -67,7 +69,6 @@ class TransactionService {
     print('🔍 Đang query transactions cho uid: ${user.uid}');
 
     return _transactionsRef
-        .where('uid', isEqualTo: user.uid)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -105,8 +106,6 @@ class TransactionService {
     if (user == null) return Stream.value([]);
 
     return _transactionsRef
-        .where('uid', isEqualTo: user.uid)
-        .where('category', isEqualTo: category)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -123,8 +122,6 @@ class TransactionService {
     if (user == null) return Stream.value([]);
 
     return _transactionsRef
-        .where('uid', isEqualTo: user.uid)
-        .where('type', isEqualTo: type)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs

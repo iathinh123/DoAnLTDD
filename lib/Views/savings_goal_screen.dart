@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../Models/savings_goal_model.dart';
+import '../models/savings_goal_model.dart';
 import '../Services/gemini_service.dart';
 
 class SavingsGoalScreen extends StatefulWidget {
@@ -81,14 +81,14 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const AlertDialog(
-        backgroundColor: Color(0xFF1E1E1E),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
         content: Row(
           children: [
-            CircularProgressIndicator(color: Colors.green),
-            SizedBox(width: 16),
+            const CircularProgressIndicator(color: Colors.green),
+            const SizedBox(width: 16),
             Text("AI đang phân tích...",
-                style: TextStyle(color: Colors.white)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
           ],
         ),
       ),
@@ -103,7 +103,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+          backgroundColor: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16)),
           title: Row(
@@ -113,7 +113,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
               Expanded(
                 child: Text(
                   goal.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 16),
                 ),
               ),
             ],
@@ -121,7 +121,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
           content: SingleChildScrollView(
             child: Text(
               response,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 14),
             ),
           ),
           actions: [
@@ -146,7 +146,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1C1C1E),
+        backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
@@ -193,7 +193,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2C2C2E),
+                      color: Theme.of(context).colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -203,7 +203,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
                         const SizedBox(width: 12),
                         Text(
                           "Deadline: ${selectedDeadline.day}/${selectedDeadline.month}/${selectedDeadline.year}",
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                         ),
                       ],
                     ),
@@ -272,7 +272,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
     return TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey),
@@ -290,11 +290,10 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text("Mục tiêu tiết kiệm",
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text("Mục tiêu tiết kiệm",
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: Colors.green),
@@ -340,7 +339,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
               border: goal.isCompleted
                   ? Border.all(color: Colors.green, width: 1.5)
@@ -361,10 +360,10 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
                         goal.isCompleted
                             ? "✅ ${goal.title}"
                             : goal.title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
                       ),
                     ),
                     // Nút AI phân tích
@@ -400,7 +399,7 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
                 // Progress bar
                 LinearProgressIndicator(
                   value: goal.percent > 1 ? 1 : goal.percent,
-                  backgroundColor: Colors.grey[800],
+                  backgroundColor: Theme.of(context).dividerColor.withOpacity(0.3),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     goal.isCompleted ? Colors.green : Colors.blue,
                   ),
@@ -414,9 +413,9 @@ class _SavingsGoalScreenState extends State<SavingsGoalScreen> {
                   children: [
                     Text(
                       "${(goal.percent * 100).toInt()}%",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                        fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "${goal.currentAmount.toStringAsFixed(0)}đ / ${goal.targetAmount.toStringAsFixed(0)}đ",

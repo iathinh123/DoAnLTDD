@@ -1,12 +1,41 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/language_provider.dart';
-import 'currency_screen.dart';
+import '../Controllers/theme_provider.dart';
 import 'login_screen.dart';
 
 typedef _TransFunc = String Function(LanguageProvider, String, String);
 typedef _SnackFunc = void Function(BuildContext, LanguageProvider, String, String, {bool isError});
+
+const List<_AvatarPreset> avatarPresets = [
+  _AvatarPreset(Icons.person, Colors.blue),
+  _AvatarPreset(Icons.face, Colors.green),
+  _AvatarPreset(Icons.star, Colors.amber),
+  _AvatarPreset(Icons.favorite, Colors.red),
+  _AvatarPreset(Icons.pets, Colors.purple),
+  _AvatarPreset(Icons.flight, Colors.cyan),
+  _AvatarPreset(Icons.music_note, Colors.pink),
+  _AvatarPreset(Icons.sports_esports, Colors.orange),
+  _AvatarPreset(Icons.eco, Colors.teal),
+  _AvatarPreset(Icons.wb_sunny, Colors.yellow),
+  _AvatarPreset(Icons.palette, Colors.deepPurple),
+  _AvatarPreset(Icons.bolt, Colors.indigo),
+  _AvatarPreset(Icons.rocket_launch, Colors.brown),
+  _AvatarPreset(Icons.forest, Colors.lime),
+  _AvatarPreset(Icons.emoji_emotions, Colors.pinkAccent),
+  _AvatarPreset(Icons.diamond, Colors.blueGrey),
+];
+
+class _AvatarPreset {
+  final IconData icon;
+  final Color color;
+  const _AvatarPreset(this.icon, this.color);
+}
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -17,11 +46,40 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   final _nameController = TextEditingController();
+  String? _avatarBase64;
+  StreamSubscription? _userDocSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToUserDoc();
+  }
 
   @override
   void dispose() {
+    _userDocSub?.cancel();
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _listenToUserDoc() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    _userDocSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      setState(() {
+        _avatarBase64 = snap.data()?['avatarBase64'] as String?;
+      });
+    });
+  }
+
+  int? _parseAvatarIndex(String? photoUrl) {
+    if (photoUrl == null || !photoUrl.startsWith('__avatar_')) return null;
+    return int.tryParse(photoUrl.substring(9));
   }
 
   @override
@@ -30,17 +88,16 @@ class _AccountScreenState extends State<AccountScreen> {
     final lang = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 120,
-            backgroundColor: Colors.black,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 _t(lang, "Tài khoản", "Account"),
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                     fontWeight: FontWeight.bold,
                     fontSize: 20),
               ),
@@ -55,23 +112,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 _buildSectionHeader(
                     _t(lang, "Cài đặt ứng dụng", "App Settings")),
                 _buildSettingsGroup([
-                  _buildSettingTile(
-                    icon: Icons.language,
-                    title: _t(lang, "Ngôn ngữ", "Language"),
-                    trailing: lang.languageCode == "vi" ? "Tiếng Việt" : "English",
-                    color: Colors.blueAccent,
-                    onTap: () => _showLanguageDialog(context, lang),
-                  ),
-                  _buildSettingTile(
-                    icon: Icons.currency_exchange,
-                    title: _t(lang, "Tiền tệ", "Currency"),
-                    trailing: "VND",
-                    color: Colors.orangeAccent,
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => CurrencyScreen()));
-                    },
-                  ),
+                  _buildThemeTile(context, lang),
                 ]),
                 const SizedBox(height: 20),
                 _buildSectionHeader(
@@ -124,7 +165,7 @@ class _AccountScreenState extends State<AccountScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.grey[900]!, Colors.black],
+            colors: [Theme.of(context).brightness == Brightness.dark ? Colors.grey[900]! : Colors.grey[200]!, Theme.of(context).scaffoldBackgroundColor],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -144,9 +185,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 CircleAvatar(
                   radius: 35,
                   backgroundColor: Colors.green.withOpacity(0.1),
-                  backgroundImage:
-                      photoUrl != null ? NetworkImage(photoUrl) : null,
-                  child: photoUrl == null
+                  backgroundImage: _avatarImageProvider(photoUrl),
+                  child: _avatarImageProvider(photoUrl) == null
                       ? const Icon(Icons.person, size: 40, color: Colors.green)
                       : null,
                 ),
@@ -158,9 +198,9 @@ class _AccountScreenState extends State<AccountScreen> {
                     decoration: BoxDecoration(
                       color: Colors.green,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 2),
+                      border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                     ),
-                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                    child: Icon(Icons.edit, size: 12, color: Theme.of(context).textTheme.bodyMedium?.color),
                   ),
                 ),
               ],
@@ -171,8 +211,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name,
-                      style: const TextStyle(
-                          color: Colors.white,
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
@@ -189,6 +229,16 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  ImageProvider? _avatarImageProvider(String? photoUrl) {
+    if (_avatarBase64 != null) {
+      return MemoryImage(base64Decode(_avatarBase64!));
+    }
+    if (photoUrl != null && !photoUrl.startsWith('__avatar_')) {
+      return NetworkImage(photoUrl);
+    }
+    return null;
+  }
+
   Widget _buildSectionHeader(String title) {
     return Container(
       width: double.infinity,
@@ -201,11 +251,50 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  Widget _buildThemeTile(BuildContext context, LanguageProvider lang) {
+    final themeProvider = context.watch<ThemeProvider>();
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
+        ),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: themeProvider.isDark
+                ? Colors.amber.withOpacity(0.1)
+                : Colors.indigo.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
+            color: themeProvider.isDark ? Colors.amber : Colors.indigo,
+            size: 22,
+          ),
+        ),
+        title: Text(
+          _t(lang, "Giao di\u1EC7n", "Theme"),
+          style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+              fontSize: 15),
+        ),
+        trailing: Switch(
+          value: themeProvider.isDark,
+          activeThumbColor: Colors.amber,
+          inactiveThumbColor: Colors.indigo,
+          onChanged: (_) => themeProvider.toggleTheme(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSettingsGroup(List<Widget> tiles) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(children: tiles),
@@ -229,7 +318,7 @@ class _AccountScreenState extends State<AccountScreen> {
         child: Icon(icon, color: color, size: 22),
       ),
       title:
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+          Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -251,66 +340,83 @@ class _AccountScreenState extends State<AccountScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          _t(lang, "Chỉnh sửa hồ sơ", "Edit Profile"),
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: _t(lang, "Họ và tên", "Full name"),
-                labelStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: const Color(0xFF2C2C2E),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final previewPresetIndex = _parseAvatarIndex(user?.photoURL);
+          return AlertDialog(
+            backgroundColor: Theme.of(ctx).cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              _t(lang, "Chỉnh sửa hồ sơ", "Edit Profile"),
+              style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.camera_alt, size: 18),
-                label: Text(
-                    _t(lang, "Đổi ảnh đại diện", "Change Avatar")),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => _showAvatarOptions(ctx, lang, setDialogState),
+                  child: CircleAvatar(
+                    radius: 45,
+                    backgroundColor: Colors.green.withOpacity(0.1),
+                    backgroundImage: _avatarImageProvider(user?.photoURL),
+                    child: _avatarImageProvider(user?.photoURL) == null
+                        ? Icon(
+                            previewPresetIndex != null
+                                ? avatarPresets[previewPresetIndex].icon
+                                : Icons.person,
+                            size: 45,
+                            color: previewPresetIndex != null
+                                ? avatarPresets[previewPresetIndex].color
+                                : Colors.green,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => _showAvatarOptions(ctx, lang, setDialogState),
+                  child: Text(
+                    _t(lang, "Đổi ảnh đại diện", "Change Avatar"),
+                    style: const TextStyle(color: Colors.green, fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _nameController,
+                  style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
+                  decoration: InputDecoration(
+                    labelText: _t(lang, "Họ và tên", "Full name"),
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    filled: true,
+                    fillColor: Theme.of(ctx).colorScheme.surfaceVariant,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                    _t(lang, "Hủy", "Cancel"),
+                    style: const TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () => _saveProfile(ctx, lang),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[800],
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
+                child: Text(_t(lang, "Lưu", "Save")),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-                _t(lang, "Hủy", "Cancel"),
-                style: const TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => _saveProfile(ctx, lang),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(_t(lang, "Lưu", "Save")),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -346,43 +452,191 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  // ── NGÔN NGỮ ──
-  void _showLanguageDialog(BuildContext context, LanguageProvider lang) {
+  void _showAvatarOptions(
+      BuildContext ctx, LanguageProvider lang, void Function(void Function()) setDialogState) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Theme.of(ctx).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _t(lang, "Chọn ảnh đại diện", "Choose Avatar"),
+                style: TextStyle(
+                  color: Theme.of(ctx).textTheme.bodyMedium?.color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: Text(_t(lang, "Thư viện ảnh", "Gallery"),
+                    style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color)),
+                onTap: () {
+                  Navigator.pop(bottomCtx);
+                  _pickAndUploadImage(ctx, lang, ImageSource.gallery, setDialogState);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.green),
+                title: Text(_t(lang, "Chụp ảnh", "Camera"),
+                    style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color)),
+                onTap: () {
+                  Navigator.pop(bottomCtx);
+                  _pickAndUploadImage(ctx, lang, ImageSource.camera, setDialogState);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.emoji_emotions, color: Colors.amber),
+                title: Text(_t(lang, "Biểu tượng có sẵn", "Preset Icons"),
+                    style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color)),
+                onTap: () {
+                  Navigator.pop(bottomCtx);
+                  _showPresetPicker(ctx, lang, setDialogState);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPresetPicker(
+      BuildContext ctx, LanguageProvider lang, void Function(void Function()) setDialogState) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+      context: ctx,
+      builder: (pickerCtx) => AlertDialog(
+        backgroundColor: Theme.of(pickerCtx).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          _t(lang, "Chọn ngôn ngữ", "Select Language"),
-          style: const TextStyle(color: Colors.white),
+          _t(lang, "Chọn biểu tượng", "Choose Icon"),
+          style: TextStyle(color: Theme.of(pickerCtx).textTheme.bodyMedium?.color),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text("Tiếng Việt",
-                  style: TextStyle(color: Colors.white)),
-              value: "vi",
-              groupValue: lang.languageCode,
-              activeColor: Colors.green,
-              onChanged: (value) {
-                lang.changeLanguage(value!);
-                Navigator.pop(ctx);
-                setState(() {});
-              },
+        content: SizedBox(
+          width: 300,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
             ),
-            RadioListTile<String>(
-              title: const Text("English",
-                  style: TextStyle(color: Colors.white)),
-              value: "en",
-              groupValue: lang.languageCode,
-              activeColor: Colors.green,
-              onChanged: (value) {
-                lang.changeLanguage(value!);
-                Navigator.pop(ctx);
-                setState(() {});
-              },
+            itemCount: avatarPresets.length,
+            itemBuilder: (_, i) {
+              final preset = avatarPresets[i];
+              return GestureDetector(
+                onTap: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  try {
+                    await user?.updatePhotoURL('__avatar_$i');
+                    await user?.reload();
+                    if (ctx.mounted) {
+                      setDialogState(() {});
+                      Navigator.pop(pickerCtx);
+                      setState(() {});
+                    }
+                  } catch (_) {}
+                },
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: preset.color.withOpacity(0.2),
+                  child: Icon(preset.icon, color: preset.color, size: 28),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(pickerCtx),
+            child: Text(_t(lang, "Hủy", "Cancel"),
+                style: const TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage(
+      BuildContext ctx, LanguageProvider lang, ImageSource source,
+      void Function(void Function()) setDialogState) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    _showLoadingDialog(ctx, lang);
+
+    try {
+      final bytes = await picked.readAsBytes();
+      final base64 = base64Encode(bytes);
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'avatarBase64': base64},
+        SetOptions(merge: true),
+      );
+
+      if (ctx.mounted) {
+        Navigator.pop(ctx);
+        setDialogState(() {});
+        setState(() {});
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(
+            content: Text(
+                _t(lang, "Đã cập nhật ảnh đại diện!", "Avatar updated!")),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (ctx.mounted) {
+        Navigator.pop(ctx);
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(
+            content: Text("${_t(lang, "Lỗi", "Error")}: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLoadingDialog(BuildContext ctx, LanguageProvider lang) {
+    showDialog(
+      context: ctx,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(ctx).cardColor,
+        content: Row(
+          children: [
+            const CircularProgressIndicator(color: Colors.green),
+            const SizedBox(width: 20),
+            Text(
+              _t(lang, "Đang tải...", "Loading..."),
+              style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
             ),
           ],
         ),
@@ -390,6 +644,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  // ── NGÔN NGỮ ──
   // ── ĐỔI MẬT KHẨU ──
   void _showChangePasswordDialog(BuildContext context, LanguageProvider lang) {
     final currentPwController = TextEditingController();
@@ -416,11 +671,11 @@ class _AccountScreenState extends State<AccountScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: Theme.of(ctx).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          _t(lang, "Trung tâm trợ giúp", "Help Center"),
-          style: const TextStyle(color: Colors.white),
+          _t(lang, "Chọn ngôn ngữ", "Select Language"),
+          style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -489,8 +744,8 @@ class _AccountScreenState extends State<AccountScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                         fontWeight: FontWeight.w600,
                         fontSize: 14)),
                 const SizedBox(height: 4),
@@ -512,9 +767,9 @@ class _AccountScreenState extends State<AccountScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1A1A1A),
+            backgroundColor: Theme.of(context).cardColor,
             title: Text(_t(lang, "Đăng xuất", "Logout"),
-                style: const TextStyle(color: Colors.white)),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
             content: Text(
                 _t(lang, "Bạn có chắc chắn muốn đăng xuất không?",
                     "Are you sure you want to logout?"),
@@ -597,11 +852,11 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   Widget build(BuildContext context) {
     final lang = widget.lang;
     return AlertDialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         widget.t(lang, "Đổi mật khẩu", "Change Password"),
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -609,12 +864,12 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           TextField(
             controller: widget.currentPwController,
             obscureText: true,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
             decoration: InputDecoration(
               labelText: widget.t(lang, "Mật khẩu hiện tại", "Current password"),
               labelStyle: const TextStyle(color: Colors.grey),
               filled: true,
-              fillColor: const Color(0xFF2C2C2E),
+              fillColor: Theme.of(context).colorScheme.surfaceVariant,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -625,12 +880,12 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           TextField(
             controller: widget.newPwController,
             obscureText: true,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
             decoration: InputDecoration(
               labelText: widget.t(lang, "Mật khẩu mới", "New password"),
               labelStyle: const TextStyle(color: Colors.grey),
               filled: true,
-              fillColor: const Color(0xFF2C2C2E),
+              fillColor: Theme.of(context).colorScheme.surfaceVariant,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -641,12 +896,12 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           TextField(
             controller: widget.confirmPwController,
             obscureText: true,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
             decoration: InputDecoration(
               labelText: widget.t(lang, "Xác nhận mật khẩu", "Confirm password"),
               labelStyle: const TextStyle(color: Colors.grey),
               filled: true,
-              fillColor: const Color(0xFF2C2C2E),
+              fillColor: Theme.of(context).colorScheme.surfaceVariant,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,

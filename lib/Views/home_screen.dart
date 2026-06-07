@@ -242,12 +242,12 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title, style: TextStyle(color: color, fontSize: 18)),
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -341,10 +341,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: selectedType == i ? const Color(0xFF4CAF50) : const Color(0xFF3A3A3C),
+          color: selectedType == i ? const Color(0xFF4CAF50) : Theme.of(context).colorScheme.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(t, style: const TextStyle(color: Colors.white)),
+        child: Text(t, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
       ),
     );
   }
@@ -352,13 +352,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCard({required String title, required String action, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+              Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 16)),
               Text(action, style: const TextStyle(color: Colors.green, fontSize: 14)),
             ],
           ),
@@ -398,9 +398,9 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     backgroundColor: Colors.grey,
-                    child: Icon(Icons.receipt, color: Colors.white),
+                    child: Icon(Icons.receipt, color: Theme.of(context).textTheme.bodyMedium?.color),
                   ),
 
                   const SizedBox(width: 12),
@@ -411,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           t.category,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -478,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return StatefulBuilder(builder: (context, setST) {
@@ -487,12 +487,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Nhóm mới", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text("Nhóm mới", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
                 TextField(
                   controller: nameCatController,
                   autofocus: true,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                   decoration: const InputDecoration(
                     hintText: "Tên nhóm (ví dụ: Đi chợ, Tiền điện...)",
                     hintStyle: TextStyle(color: Colors.grey),
@@ -558,25 +558,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))
       ),
       builder: (sheetContext) {
         return Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text("Chọn nhóm",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             Expanded(
               child: ListView(
                 children: [
                   // Hiển thị toàn bộ danh sách đã gộp
                   ...displayList.map((categoryName) => ListTile(
-                    leading: const Icon(Icons.label_outline, color: Colors.white70),
-                    title: Text(categoryName, style: const TextStyle(color: Colors.white)),
+                    leading: Icon(Icons.label_outline, color: Theme.of(context).textTheme.bodySmall?.color),
+                    title: Text(categoryName, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
                     onTap: () {
                       setModalState(() => selectedCategory = categoryName);
                       Navigator.pop(sheetContext);
@@ -604,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
@@ -614,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Thêm giao dịch mới", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text("Thêm giao dịch mới", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -635,8 +635,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 24,
                     ),
                     decoration: const InputDecoration(
@@ -651,10 +651,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   ListTile(
                     onTap: () => _showCategoryPicker(setModalState),
-                    leading: const Icon(Icons.category, color: Colors.white),
+                    leading: Icon(Icons.category, color: Theme.of(context).textTheme.bodyMedium?.color),
                     title: Text(
                       selectedCategory,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                     ),
                     trailing: const Icon(
                       Icons.arrow_forward_ios,
@@ -684,14 +684,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     },
 
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.calendar_today,
-                      color: Colors.white,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
 
                     title: Text(
                       "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                     ),
 
                     trailing: const Icon(
@@ -705,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   TextField(
                     controller: noteController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
 
                     decoration: const InputDecoration(
                       hintText: "Ghi chú",
@@ -795,13 +795,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E), // Màu xám tối nhẹ hơn màu nền gốc một chút
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2C2C2E) : Colors.grey[200],
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14),
         leading: Icon(icon, color: Colors.grey[400], size: 22),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
+        title: Text(title, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -818,7 +818,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: IndexedStack(
         index: currentIndex,
         children: [
@@ -838,10 +837,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 isBalanceVisible ? formatMoney(balance) : "********",
-                                style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 26, color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.search, color: Colors.white),
+                                icon: Icon(Icons.search, color: Theme.of(context).textTheme.bodyMedium?.color),
                                 onPressed: () {
                                   Navigator.push(context, MaterialPageRoute(
                                     builder: (context) => AdvancedSearchScreen(allTransactions: transactions),
@@ -849,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                               ),
                               IconButton(
-                                icon: Icon(isBalanceVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white, size: 20),
+                                icon: Icon(isBalanceVisible ? Icons.visibility : Icons.visibility_off, color: Theme.of(context).textTheme.bodyMedium?.color, size: 20),
                                 onPressed: () => setState(() => isBalanceVisible = !isBalanceVisible),
                               ),
                             ],
@@ -857,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text("Tổng số dư", style: TextStyle(color: Colors.grey)),
                         ],
                       ),
-                      const Icon(Icons.notifications_none, color: Colors.white),
+                      Icon(Icons.notifications_none, color: Theme.of(context).textTheme.bodyMedium?.color),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -869,7 +868,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.wallet, color: Colors.white)),
                         const SizedBox(width: 15),
-                        const Expanded(child: Text("Tiền mặt", style: TextStyle(color: Colors.white))),
+                        Expanded(child: Text("Tiền mặt", style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color))),
                         Text(formatMoney(balance)),
                       ],
                     ),
@@ -906,29 +905,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                   return Row(
                                     children: [
-                                      const CircleAvatar(
+                                      CircleAvatar(
                                         backgroundColor: Colors.blue,
                                         child: Icon(
                                           Icons.people,
-                                          color: Colors.white,
+                                          color: Theme.of(context).textTheme.bodyMedium?.color,
                                         ),
                                       ),
 
                                       const SizedBox(width: 15),
 
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
                                           "Danh sách bạn bè",
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: Theme.of(context).textTheme.bodyMedium?.color,
                                           ),
                                         ),
                                       ),
 
                                       Text(
                                         "$count",
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: Theme.of(context).textTheme.bodyMedium?.color,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
                                         ),
@@ -953,8 +952,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     requestCount > 99
                                         ? "99+"
                                         : "$requestCount",
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.of(context).textTheme.bodyMedium?.color,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1007,8 +1006,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (i) => setState(() => currentIndex = i),
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
+        selectedItemColor: Theme.of(context).textTheme.bodyMedium?.color,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
