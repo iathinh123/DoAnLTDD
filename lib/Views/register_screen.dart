@@ -108,7 +108,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -126,10 +125,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(height: size.height * 0.02),
               Text(
                 lang.getText("register").toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                     letterSpacing: 1.5
                 ),
               ),
@@ -222,7 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
           text,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 14)
       ),
     );
   }
@@ -235,13 +234,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: moneyLoverGreen.withOpacity(0.3)),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
         obscureText: isPassword ? !_isPasswordVisible : false,
         decoration: InputDecoration(
           hintText: hintText,

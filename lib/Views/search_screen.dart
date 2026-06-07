@@ -59,11 +59,10 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
         appBar: AppBar(
-          backgroundColor: Colors.black,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).textTheme.bodyMedium?.color),
             onPressed: () {
               if (_isSearching) {
                 setState(() => _isSearching = false);
@@ -74,10 +73,10 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
           ),
           title: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+            decoration: InputDecoration(
               hintText: "Tìm kiếm nhóm hoặc ghi chú...",
-              hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
               border: InputBorder.none,
             ),
             onSubmitted: _performSearch,
@@ -101,7 +100,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
     double total = _results.fold(0, (sum, item) => sum + item.amount);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      color: Colors.white.withOpacity(0.05),
+      color: Theme.of(context).dividerColor.withOpacity(0.1),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -140,9 +139,9 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
           child: Wrap(
             spacing: 8,
             children: _history.map((h) => ActionChip(
-              backgroundColor: const Color(0xFF1A1A1A),
+              backgroundColor: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              label: Text(h, style: const TextStyle(color: Colors.white, fontSize: 13)),
+              label: Text(h, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13)),
               onPressed: () {
                 _searchController.text = h;
                 _performSearch(h);
@@ -176,7 +175,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
           leading: Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.grey[900], shape: BoxShape.circle),
+            decoration: BoxDecoration(color: Theme.of(context).cardColor, shape: BoxShape.circle),
             child: const Icon(Icons.receipt_long, color: Colors.green, size: 20),
           ),
           title: _highlightText(t.category, _currentQuery), // NÂNG CẤP: Highlight từ khóa
@@ -191,12 +190,12 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
   // NÂNG CẤP: Hàm làm nổi bật từ khóa tìm kiếm
   Widget _highlightText(String text, String query) {
     if (query.isEmpty || !text.toLowerCase().contains(query.toLowerCase())) {
-      return Text(text, style: const TextStyle(color: Colors.white));
+      return Text(text, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color));
     }
     final int startIndex = text.toLowerCase().indexOf(query.toLowerCase());
     return RichText(
       text: TextSpan(
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 16),
         children: [
           TextSpan(text: text.substring(0, startIndex)),
           TextSpan(text: text.substring(startIndex, startIndex + query.length),

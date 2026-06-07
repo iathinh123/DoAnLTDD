@@ -18,14 +18,13 @@ class _GroupJarScreenState extends State<GroupJarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Nền tối sâu sang trọng đồng bộ
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           "Hũ nhóm của tôi",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 22),
         ),
       ),
 
@@ -102,7 +101,7 @@ class _GroupJarScreenState extends State<GroupJarScreen> {
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E), // Màu nền thẻ card xám tối nhẹ
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -128,8 +127,8 @@ class _GroupJarScreenState extends State<GroupJarScreen> {
                           Expanded(
                             child: Text(
                               data["name"] ?? "",
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -172,7 +171,7 @@ class _GroupJarScreenState extends State<GroupJarScreen> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: progress > 1 ? 1 : progress,
-                              backgroundColor: Colors.grey[800],
+                              backgroundColor: Theme.of(context).dividerColor.withOpacity(0.3),
                               valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
                               minHeight: 6,
                             ),
@@ -198,8 +197,8 @@ class _GroupJarScreenState extends State<GroupJarScreen> {
                         ],
                       ),
                       trailing: PopupMenuButton<String>(
-                        color: const Color(0xFF2C2C2E), // Đổi màu nền menu popup sang xám đậm thay vì đen thui
-                        icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
+                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        icon: Icon(Icons.more_vert_rounded, color: Theme.of(context).textTheme.bodySmall?.color),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         itemBuilder: (context) {
                           return [

@@ -98,13 +98,12 @@ class _TransactionScreenState extends State<TransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Giao Dịch',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(144),
@@ -126,7 +125,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
@@ -217,10 +216,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
           _selectedType = selected ? type : null;
         });
       },
-      backgroundColor: Colors.grey[800],
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       selectedColor: const Color(0xFF00BCD4),
       labelStyle: TextStyle(
-        color: isSelected ? Colors.black : Colors.white,
+        color: isSelected ? Colors.black : Theme.of(context).textTheme.bodyMedium?.color,
       ),
     );
   }
@@ -235,10 +234,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
           _selectedCategory = selected ? category : null;
         });
       },
-      backgroundColor: Colors.grey[800],
+      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
       selectedColor: const Color(0xFF00BCD4),
       labelStyle: TextStyle(
-        color: isSelected ? Colors.black : Colors.white,
+        color: isSelected ? Colors.black : Theme.of(context).textTheme.bodyMedium?.color,
       ),
     );
   }
@@ -327,7 +326,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: Colors.grey[900],
+            backgroundColor: Theme.of(context).cardColor,
             title: const Text(
               'Xóa giao dịch',
               style: TextStyle(color: Colors.white),
@@ -353,7 +352,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
         await _deleteTransaction(transaction.id);
       },
       child: Card(
-        color: Colors.grey[900],
+        color: Theme.of(context).cardColor,
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           leading: CircleAvatar(
@@ -362,10 +361,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
           ),
           title: Text(
             transaction.category,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,9 +407,9 @@ class _TransactionScreenState extends State<TransactionScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -427,12 +426,12 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Sửa Giao Dịch',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -444,9 +443,9 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           if (states.contains(WidgetState.selected)) {
                             return const Color(0xFF00BCD4);
                           }
-                          return Colors.grey[800];
+                          return Theme.of(context).colorScheme.surfaceVariant;
                         }),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
+                        foregroundColor: WidgetStateProperty.all(Theme.of(context).textTheme.bodyMedium?.color),
                       ),
                       segments: const [
                         ButtonSegment(value: 0, label: Text('💸 Chi')),
@@ -465,13 +464,13 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     // Số tiền
                     TextFormField(
                       initialValue: amount.toString(),
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: 'Số tiền',
                         labelStyle: TextStyle(color: Colors.grey[400]),
                         prefixText: '₫ ',
-                        prefixStyle: const TextStyle(color: Colors.white),
+                        prefixStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Colors.grey[700]!),
@@ -485,7 +484,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           borderSide: const BorderSide(color: Color(0xFF00BCD4)),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[850],
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.grey[200],
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -505,7 +504,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     // Danh mục
                     TextFormField(
                       initialValue: category,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                       decoration: InputDecoration(
                         labelText: 'Danh mục',
                         labelStyle: TextStyle(color: Colors.grey[400]),
@@ -522,7 +521,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           borderSide: const BorderSide(color: Color(0xFF00BCD4)),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[850],
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.grey[200],
                       ),
                       onSaved: (value) {
                         category = value!;
@@ -533,7 +532,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     // Ghi chú
                     TextFormField(
                       initialValue: note,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                       decoration: InputDecoration(
                         labelText: 'Ghi chú',
                         labelStyle: TextStyle(color: Colors.grey[400]),
@@ -550,7 +549,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           borderSide: const BorderSide(color: Color(0xFF00BCD4)),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[850],
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.grey[200],
                       ),
                       onSaved: (value) {
                         note = value ?? '';
@@ -560,19 +559,19 @@ class _TransactionScreenState extends State<TransactionScreen> {
 
                     // Ngày tháng
                     ListTile(
-                      tileColor: Colors.grey[850],
+                      tileColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.grey[200],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      title: const Text(
+                      title: Text(
                         'Ngày giao dịch',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                       ),
                       subtitle: Text(
                         _formatDate(date),
                         style: const TextStyle(color: Color(0xFF00BCD4)),
                       ),
-                      trailing: const Icon(Icons.calendar_today, color: Colors.white),
+                      trailing: Icon(Icons.calendar_today, color: Theme.of(context).textTheme.bodyMedium?.color),
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -601,7 +600,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                           child: ElevatedButton(
                             onPressed: () => Navigator.pop(context),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[800],
+                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(

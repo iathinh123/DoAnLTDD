@@ -157,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 25),
@@ -168,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 15),
               Text(
                 lang.getText("login").toUpperCase(),
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color, letterSpacing: 2),
               ),
               const SizedBox(height: 8),
               Text(
@@ -219,11 +218,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 55,
                 child: OutlinedButton.icon(
                   onPressed: signInWithGoogle,
-                  icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.white, size: 30),
-                  label: Text(lang.getText("google"), style: const TextStyle(color: Colors.white, fontSize: 15)),
+                  icon: Icon(Icons.g_mobiledata_rounded, color: Theme.of(context).textTheme.bodyMedium?.color, size: 30),
+                  label: Text(lang.getText("google"), style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15)),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    side: const BorderSide(color: moneyLoverGreen),
+                    side: BorderSide(color: moneyLoverGreen),
                   ),
                 ),
               ),
@@ -232,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(lang.getText("no_account"), style: const TextStyle(color: Colors.white70)),
+                    Text(lang.getText("no_account"), style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
                     TextButton(
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen())),
                       child: Text(
@@ -258,13 +257,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: moneyLoverGreen.withValues(alpha: 0.3)),
       ),
       child: TextField(
         controller: controller,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
         obscureText: isPassword ? !_isPasswordVisible : false,
         decoration: InputDecoration(
           hintText: hintText,

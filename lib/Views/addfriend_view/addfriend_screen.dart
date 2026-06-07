@@ -31,16 +31,15 @@ class _AddFriendScreenState extends State<AddFriendScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Nền tối sâu đồng bộ sang trọng
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white), // Giúp nút Back có màu trắng rõ ràng
-        title: const Text(
+        iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyMedium?.color),
+        title: Text(
           "Kết nối bạn bè",
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -52,7 +51,7 @@ class _AddFriendScreenState extends State<AddFriendScreen>
           indicatorColor: Colors.green, // Thanh gạch chân màu xanh lá chủ đạo
           indicatorWeight: 3, // Thanh gạch chân dày dặn, sắc nét hơn
           labelColor: Colors.green, // Màu icon và chữ khi được chọn
-          unselectedLabelColor: Colors.grey[500], // Màu icon và chữ khi chưa chọn
+          unselectedLabelColor: Colors.grey,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), // Chữ in đậm khi được chọn
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
           tabs: const [

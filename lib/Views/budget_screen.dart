@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Controllers/budget_controller.dart';
-import '../Models/budget_model.dart';
+import '../models/budget_model.dart';
 import '../Services/category_service.dart';
+import 'budget_detail_screen.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
 
+  Color get _accent => const Color(0xFF00BCD4);
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<BudgetController>();
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           "Ngân sách",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: theme.textTheme.bodyMedium?.color,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync, color: Color(0xFF00BCD4)),
+            icon: Icon(Icons.sync, color: _accent),
             tooltip: "Đồng bộ chi tiêu",
             onPressed: () async {
               await controller.syncSpent();
@@ -44,85 +51,86 @@ class BudgetScreen extends StatelessWidget {
         ],
       ),
       body: controller.isLoading
-          ? const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00BCD4)),
-        ),
-      )
-          : Column(
-        children: [
-          _buildMonthSelector(context, controller),
-          _buildSummaryCard(controller),
-          if (controller.warningBudgets.isNotEmpty)
-            _buildWarningBanner(controller),
-          const SizedBox(height: 8),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await controller.syncSpent();
-              },
-              color: const Color(0xFF00BCD4),
-              child: controller.budgets.isEmpty
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.pie_chart_outline,
-                      size: 64,
-                      color: Colors.grey[700],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Chưa có ngân sách nào",
-                      style: TextStyle(color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          _showAddEditDialog(context, controller),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Thêm ngân sách mới"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00BCD4),
-                        foregroundColor: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-                  : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.budgets.length,
-                itemBuilder: (context, index) {
-                  return _buildBudgetCard(
-                    context,
-                    controller,
-                    controller.budgets[index],
-                  );
-                },
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(_accent),
               ),
+            )
+          : Column(
+              children: [
+                _buildMonthSelector(context, controller),
+                _buildSummaryCard(context, controller),
+                if (controller.warningBudgets.isNotEmpty)
+                  _buildWarningBanner(context, controller),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await controller.syncSpent();
+                    },
+                    color: _accent,
+                    child: controller.budgets.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.pie_chart_outline,
+                                  size: 64,
+                                  color: theme.disabledColor,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Chưa có ngân sách nào",
+                                  style: TextStyle(color: theme.textTheme.bodySmall?.color),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _showAddEditDialog(context, controller),
+                                  icon: const Icon(Icons.add),
+                                  label: const Text("Thêm ngân sách mới"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _accent,
+                                    foregroundColor: theme.textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: controller.budgets.length,
+                            itemBuilder: (context, index) {
+                              return _buildBudgetCard(
+                                context,
+                                controller,
+                                controller.budgets[index],
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
   // ── Chọn tháng ──
   Widget _buildMonthSelector(BuildContext context, BudgetController controller) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
+            icon: Icon(Icons.chevron_left, color: theme.textTheme.bodyMedium?.color),
             onPressed: () {
               int m = controller.selectedMonth - 1;
               int y = controller.selectedYear;
@@ -135,14 +143,14 @@ class BudgetScreen extends StatelessWidget {
           ),
           Text(
             "Tháng ${controller.selectedMonth}/${controller.selectedYear}",
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: theme.textTheme.bodyMedium?.color,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
+            icon: Icon(Icons.chevron_right, color: theme.textTheme.bodyMedium?.color),
             onPressed: () {
               int m = controller.selectedMonth + 1;
               int y = controller.selectedYear;
@@ -159,7 +167,8 @@ class BudgetScreen extends StatelessWidget {
   }
 
   // ── Card tổng quan ──
-  Widget _buildSummaryCard(BudgetController controller) {
+  Widget _buildSummaryCard(BuildContext context, BudgetController controller) {
+    final theme = Theme.of(context);
     double percent = controller.totalLimit > 0
         ? controller.totalSpent / controller.totalLimit
         : 0;
@@ -167,16 +176,16 @@ class BudgetScreen extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Tổng quan tháng",
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 13),
           ),
           const SizedBox(height: 12),
           Row(
@@ -185,7 +194,7 @@ class BudgetScreen extends StatelessWidget {
               _summaryItem(
                 "Tổng hạn mức",
                 "${_formatMoney(controller.totalLimit)}đ",
-                Colors.white,
+                theme.textTheme.bodyMedium?.color ?? Colors.white,
               ),
               _summaryItem(
                 "Đã tiêu",
@@ -204,13 +213,13 @@ class BudgetScreen extends StatelessWidget {
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: percent > 1 ? 1 : percent,
-            backgroundColor: Colors.grey[800],
+            backgroundColor: theme.dividerColor,
             valueColor: AlwaysStoppedAnimation<Color>(
               percent > 0.9
                   ? Colors.red
                   : percent > 0.7
                   ? Colors.orange
-                  : const Color(0xFF00BCD4),
+                  : _accent,
             ),
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
@@ -219,7 +228,7 @@ class BudgetScreen extends StatelessWidget {
           Text(
             "${(percent * 100).toInt()}% đã sử dụng",
             style: TextStyle(
-              color: percent > 0.9 ? Colors.red : Colors.white54,
+              color: percent > 0.9 ? Colors.red : theme.textTheme.bodySmall?.color,
               fontSize: 12,
             ),
             textAlign: TextAlign.end,
@@ -248,14 +257,14 @@ class BudgetScreen extends StatelessWidget {
   }
 
   // ── Banner cảnh báo ──
-  Widget _buildWarningBanner(BudgetController controller) {
+  Widget _buildWarningBanner(BuildContext context, BudgetController controller) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withAlpha(76)),
       ),
       child: Row(
         children: [
@@ -278,6 +287,7 @@ class BudgetScreen extends StatelessWidget {
       BudgetController controller,
       Budget budget,
       ) {
+    final theme = Theme.of(context);
     return Dismissible(
       key: Key(budget.id),
       direction: DismissDirection.endToStart,
@@ -295,14 +305,14 @@ class BudgetScreen extends StatelessWidget {
         return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E1E),
-            title: const Text(
+            backgroundColor: theme.cardColor,
+            title: Text(
               'Xóa ngân sách',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.textTheme.bodyMedium?.color),
             ),
             content: Text(
               'Bạn có chắc muốn xóa ngân sách "${budget.title}"?',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: theme.textTheme.bodySmall?.color),
             ),
             actions: [
               TextButton(
@@ -319,17 +329,21 @@ class BudgetScreen extends StatelessWidget {
       },
       onDismissed: (_) => controller.deleteBudget(budget.id),
       child: GestureDetector(
-        onTap: () => _showAddEditDialog(context, controller, budget: budget),
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => BudgetDetailScreen(budget: budget),
+          ));
+        },
         child: Container(
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
             border: budget.isOverLimit
-                ? Border.all(color: Colors.red.withOpacity(0.5), width: 1.5)
+                ? Border.all(color: Colors.red.withAlpha(128), width: 1.5)
                 : budget.isNearLimit
-                ? Border.all(color: Colors.orange.withOpacity(0.5), width: 1.5)
+                ? Border.all(color: Colors.orange.withAlpha(128), width: 1.5)
                 : null,
           ),
           child: Column(
@@ -342,7 +356,7 @@ class BudgetScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: budget.color.withOpacity(0.2),
+                          color: budget.color.withAlpha(51),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(budget.icon, color: budget.color, size: 24),
@@ -353,8 +367,8 @@ class BudgetScreen extends StatelessWidget {
                         children: [
                           Text(
                             budget.title,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: theme.textTheme.bodyMedium?.color,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -362,7 +376,7 @@ class BudgetScreen extends StatelessWidget {
                           Text(
                             budget.category,
                             style: TextStyle(
-                              color: Colors.grey[500],
+                              color: theme.textTheme.bodySmall?.color,
                               fontSize: 12,
                             ),
                           ),
@@ -385,7 +399,7 @@ class BudgetScreen extends StatelessWidget {
                               ? Colors.red
                               : budget.isNearLimit
                               ? Colors.orange
-                              : Colors.white,
+                              : theme.textTheme.bodyMedium?.color,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -397,7 +411,7 @@ class BudgetScreen extends StatelessWidget {
               const SizedBox(height: 16),
               LinearProgressIndicator(
                 value: budget.percent > 1 ? 1 : budget.percent,
-                backgroundColor: Colors.grey[800],
+                backgroundColor: theme.dividerColor,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   budget.isOverLimit
                       ? Colors.red
@@ -414,7 +428,7 @@ class BudgetScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       "Đã tiêu: ${_formatMoney(budget.spent)}đ",
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -431,7 +445,7 @@ class BudgetScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       "Hạn mức: ${_formatMoney(budget.limit)}đ",
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
                       textAlign: TextAlign.end,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -445,11 +459,10 @@ class BudgetScreen extends StatelessWidget {
     );
   }
 
-  // ── Dialog thêm/sửa ngân sách (DÙNG CATEGORIES ĐỘNG) ──
-  // ── Dialog thêm/sửa ngân sách ──
   // ── Dialog thêm/sửa ngân sách ──
   void _showAddEditDialog(BuildContext context, BudgetController controller,
       {Budget? budget}) {
+    final theme = Theme.of(context);
     final isEdit = budget != null;
     final titleController = TextEditingController(text: budget?.title ?? '');
     final limitController = TextEditingController(
@@ -459,13 +472,12 @@ class BudgetScreen extends StatelessWidget {
     IconData selectedIcon = budget?.icon ?? Icons.fastfood;
     Color selectedColor = budget?.color ?? Colors.orange;
 
-    // Lấy danh sách categories từ controller (đã đồng bộ với HomeScreen)
     final categories = controller.getBudgetCategories();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -485,8 +497,8 @@ class BudgetScreen extends StatelessWidget {
                 Center(
                   child: Text(
                     isEdit ? "Sửa ngân sách" : "Thêm ngân sách mới",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(ctx).textTheme.bodyMedium?.color,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -496,8 +508,8 @@ class BudgetScreen extends StatelessWidget {
 
                 TextField(
                   controller: titleController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("Tên ngân sách", Icons.title),
+                  style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
+                  decoration: _inputDecoration(ctx, "Tên ngân sách", Icons.title),
                   autofocus: !isEdit,
                 ),
                 const SizedBox(height: 16),
@@ -505,23 +517,26 @@ class BudgetScreen extends StatelessWidget {
                 TextField(
                   controller: limitController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("Hạn mức (đ)", Icons.attach_money),
+                  style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
+                  decoration: _inputDecoration(ctx, "Hạn mức (đ)", Icons.attach_money),
                 ),
                 const SizedBox(height: 16),
 
-                const Text(
+                Text(
                   "Danh mục chi tiêu",
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(
+                    color: Theme.of(ctx).textTheme.bodySmall?.color,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
                 if (categories.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Text(
                       "Chưa có danh mục chi tiêu nào.\nHãy thêm giao dịch để tạo danh mục!",
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color),
                       textAlign: TextAlign.center,
                     ),
                   )
@@ -546,7 +561,9 @@ class BudgetScreen extends StatelessWidget {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: isSelected ? color.withOpacity(0.2) : Colors.grey[900],
+                            color: isSelected
+                                ? color.withAlpha(51)
+                                : Theme.of(ctx).colorScheme.surfaceVariant,
                             borderRadius: BorderRadius.circular(25),
                             border: Border.all(
                               color: isSelected ? color : Colors.transparent,
@@ -556,16 +573,14 @@ class BudgetScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                icon,
-                                color: color,
-                                size: 18,
-                              ),
+                              Icon(icon, color: color, size: 18),
                               const SizedBox(width: 6),
                               Text(
                                 cat['label'] as String,
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.grey,
+                                  color: isSelected
+                                      ? Theme.of(ctx).textTheme.bodyMedium?.color
+                                      : Theme.of(ctx).textTheme.bodySmall?.color,
                                   fontSize: 13,
                                   fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                                 ),
@@ -582,8 +597,8 @@ class BudgetScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00BCD4),
-                      foregroundColor: Colors.black,
+                      backgroundColor: _accent,
+                      foregroundColor: theme.textTheme.bodyMedium?.color,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -663,31 +678,33 @@ class BudgetScreen extends StatelessWidget {
       ),
     );
   }
+
 // Dialog thêm danh mục mới
   void _showAddCategoryDialog(BuildContext context, BudgetController controller) {
+    final theme = Theme.of(context);
     final nameController = TextEditingController();
     String selectedType = 'expense';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
+        backgroundColor: theme.cardColor,
+        title: Text(
           'Thêm danh mục mới',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: theme.textTheme.bodyMedium?.color),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+              decoration: InputDecoration(
                 hintText: 'Tên danh mục',
-                hintStyle: TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: theme.textTheme.bodySmall?.color),
                 filled: true,
-                fillColor: Color(0xFF2C2C2E),
-                border: OutlineInputBorder(
+                fillColor: theme.colorScheme.surfaceVariant,
+                border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(8)),
                   borderSide: BorderSide.none,
                 ),
@@ -695,9 +712,9 @@ class BudgetScreen extends StatelessWidget {
               autofocus: true,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Loại danh mục',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: theme.textTheme.bodySmall?.color),
             ),
             const SizedBox(height: 8),
             Row(
@@ -709,10 +726,10 @@ class BudgetScreen extends StatelessWidget {
                   onSelected: (selected) {
                     if (selected) selectedType = 'expense';
                   },
-                  selectedColor: Colors.red.withOpacity(0.3),
-                  backgroundColor: Colors.grey[800],
+                  selectedColor: Colors.red.withAlpha(76),
+                  backgroundColor: theme.colorScheme.surfaceVariant,
                   labelStyle: TextStyle(
-                    color: selectedType == 'expense' ? Colors.red : Colors.white,
+                    color: selectedType == 'expense' ? Colors.red : theme.textTheme.bodyMedium?.color,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -722,10 +739,10 @@ class BudgetScreen extends StatelessWidget {
                   onSelected: (selected) {
                     if (selected) selectedType = 'income';
                   },
-                  selectedColor: Colors.green.withOpacity(0.3),
-                  backgroundColor: Colors.grey[800],
+                  selectedColor: Colors.green.withAlpha(76),
+                  backgroundColor: theme.colorScheme.surfaceVariant,
                   labelStyle: TextStyle(
-                    color: selectedType == 'income' ? Colors.green : Colors.white,
+                    color: selectedType == 'income' ? Colors.green : theme.textTheme.bodyMedium?.color,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -735,10 +752,10 @@ class BudgetScreen extends StatelessWidget {
                   onSelected: (selected) {
                     if (selected) selectedType = 'debt';
                   },
-                  selectedColor: Colors.blue.withOpacity(0.3),
-                  backgroundColor: Colors.grey[800],
+                  selectedColor: Colors.blue.withAlpha(76),
+                  backgroundColor: theme.colorScheme.surfaceVariant,
                   labelStyle: TextStyle(
-                    color: selectedType == 'debt' ? Colors.blue : Colors.white,
+                    color: selectedType == 'debt' ? Colors.blue : theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ],
@@ -757,8 +774,8 @@ class BudgetScreen extends StatelessWidget {
                 await categoryService.saveCategory(
                   nameController.text,
                   selectedType,
-                  'category', // icon mặc định
-                  0xFF9E9E9E, // color mặc định
+                  'category',
+                  0xFF9E9E9E,
                 );
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
@@ -772,8 +789,8 @@ class BudgetScreen extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00BCD4),
-              foregroundColor: Colors.black,
+              backgroundColor: _accent,
+              foregroundColor: theme.textTheme.bodyMedium?.color,
             ),
             child: const Text('Thêm'),
           ),
@@ -782,13 +799,14 @@ class BudgetScreen extends StatelessWidget {
     );
   }
 
-  InputDecoration _inputDecoration(String hint, IconData icon) {
+  InputDecoration _inputDecoration(BuildContext context, String hint, IconData icon) {
+    final theme = Theme.of(context);
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: Icon(icon, color: const Color(0xFF00BCD4), size: 20),
+      hintStyle: TextStyle(color: theme.textTheme.bodySmall?.color),
+      prefixIcon: Icon(icon, color: _accent, size: 20),
       filled: true,
-      fillColor: Colors.grey[900],
+      fillColor: theme.colorScheme.surfaceVariant,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,

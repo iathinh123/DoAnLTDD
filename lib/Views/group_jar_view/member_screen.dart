@@ -53,11 +53,11 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
       context: context,
       builder: (_) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E), // Đồng bộ nền tối cho Dialog
+          backgroundColor: Theme.of(context).cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
+          title: Text(
             "Thêm thành viên",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -78,13 +78,13 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C2C2E),
+                    color: Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                     leading: CircleAvatar(
-                      backgroundColor: Colors.grey[700],
+                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                       backgroundImage: friend.avatarUrl.isNotEmpty ? NetworkImage(friend.avatarUrl) : null,
                       child: friend.avatarUrl.isEmpty ? const Icon(Icons.person, color: Colors.white) : null,
                     ),
@@ -111,14 +111,13 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Nền tối sâu đồng bộ sang trọng
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+        iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyMedium?.color),
+        title: Text(
           "Thành viên nhóm",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ),
 
@@ -171,7 +170,7 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E), // Màu card xám tối nhẹ
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
@@ -184,7 +183,7 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.grey[800],
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                     backgroundImage: member["avatarUrl"] != null && member["avatarUrl"].toString().isNotEmpty
                         ? NetworkImage(member["avatarUrl"])
                         : null,
@@ -196,7 +195,7 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
                     children: [
                       Text(
                         member["name"] ?? "",
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       if (isOwner) ...[
                         const SizedBox(width: 8),
@@ -224,8 +223,8 @@ class _GroupJarMembersScreenState extends State<GroupJarMembersScreen> {
                   ),
                   trailing: isCreator && !isOwner
                       ? PopupMenuButton<String>(
-                    color: const Color(0xFF2C2C2E), // Đổi nền menu popup sang xám đậm thay vì trắng mặc định
-                    icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
+                    color: Theme.of(context).colorScheme.surfaceVariant, // Đổi nền menu popup sang xám đậm thay vì trắng mặc định
+                    icon: Icon(Icons.more_vert_rounded, color: Theme.of(context).textTheme.bodySmall?.color),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     itemBuilder: (_) => [
                       const PopupMenuItem(

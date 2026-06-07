@@ -86,7 +86,7 @@ class AllUsersTab extends StatelessWidget {
 
                         return Card(
                           color:
-                          const Color(0xFF1E1E1E),
+                          Theme.of(context).cardColor,
                           margin:
                           const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -124,8 +124,8 @@ class AllUsersTab extends StatelessWidget {
                             title: Text(
                               sender["name"] ?? "",
                               style:
-                              const TextStyle(
-                                color: Colors.white,
+                              TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
                                 fontWeight:
                                 FontWeight.bold,
                               ),
@@ -193,15 +193,15 @@ class AllUsersTab extends StatelessWidget {
                     ),
                   ),
 
-                const Divider(
-                  color: Colors.grey,
+                    Divider(
+                  color: Theme.of(context).dividerColor,
                   height: 1,
                 ),
 
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.people_alt,
@@ -211,7 +211,7 @@ class AllUsersTab extends StatelessWidget {
                       Text(
                         "Người dùng",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                           fontSize: 18,
                           fontWeight:
                           FontWeight.bold,

@@ -75,15 +75,14 @@ class _CreateGroupJarScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Màu nền tối sâu hơn, dễ chịu hơn
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Tạo hũ nhóm",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyMedium?.color),
         ),
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyMedium?.color),
       ),
       body: isLoading
           ? const Center(
@@ -149,7 +148,7 @@ class _CreateGroupJarScreenState
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E1E),
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: CheckboxListTile(
@@ -161,8 +160,8 @@ class _CreateGroupJarScreenState
                             ),
                             title: Text(
                               friend.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -244,7 +243,7 @@ class _CreateGroupJarScreenState
           borderSide: const BorderSide(color: Colors.green, width: 1.5),
         ),
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: Theme.of(context).cardColor,
       ),
     );
   }

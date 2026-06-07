@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Models/budget_model.dart';
+import '../models/budget_model.dart';
 import '../Services/budget_service.dart';
 import '../Services/category_service.dart';
 
