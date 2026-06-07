@@ -12,6 +12,8 @@ import 'all_transaction_screen.dart';
 import 'AI_screen.dart';
 import 'addfriend_view/addfriend_screen.dart';
 import 'group_jar_view/group_jar_screen.dart';
+import 'report_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -388,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return _buildCard(
       title: "Giao dịch gần đây",
-      action: "Xem tất cả",
+      action: "",
       child: Column(
         children: [
           ...recentList.map((t) {
@@ -863,7 +865,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Ví của tôi
                   _buildCard(
                     title: "Ví của tôi",
-                    action: "Xem tất cả",
+                    action: "",
                     child: Row(
                       children: [
                         const CircleAvatar(backgroundColor: Colors.orange, child: Icon(Icons.wallet, color: Colors.white)),
@@ -967,10 +969,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Báo cáo
-                  _buildCard(
-                    title: "Báo cáo tháng này",
-                    action: "Xem báo cáo",
-                    child: Row(
+              GestureDetector(
+                onTap: () {
+                  // Lấy User ID hiện tại đang đăng nhập từ Firebase Auth
+                  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+                  if (currentUserId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportScreen(userId: currentUserId),
+                      ),
+                    );
+                  }
+                },
+                child: _buildCard(
+                  title: "Báo cáo tháng này",
+                  action: "Xem báo cáo",
+                  child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildReportItem("Tổng đã chi", totalExpense, Colors.red),
@@ -978,6 +994,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+              ),
                   const SizedBox(height: 20),
                   // Chart
                   ExpenseChart(transactions: transactions),
@@ -986,7 +1003,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildRecentTransactions(),
 
                   const SizedBox(height: 80),
-                ],
+              ],
               ),
             ),
           ),
