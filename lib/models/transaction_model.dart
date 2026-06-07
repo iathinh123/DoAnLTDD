@@ -61,7 +61,6 @@ class TransactionModel {
     if (value.runtimeType.toString() == 'Timestamp') {
       return value.toDate();
     }
-
     return DateTime.now();
   }
 }

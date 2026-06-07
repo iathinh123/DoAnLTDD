@@ -20,6 +20,68 @@ class _AIScreenState extends State<AIScreen> {
 
   String get userId => FirebaseAuth.instance.currentUser?.uid ?? "";
 
+  Future<String> _buildFinancialContext() async {
+    final now = DateTime.now();
+
+    final startOfMonth = DateTime(now.year, now.month, 1);
+
+    final txSnapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("transactions")
+        .where(
+      "date",
+      isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+    )
+        .get();
+
+    double income = 0;
+    double expense = 0;
+
+    Map<String, double> categoryMap = {};
+
+    for (var doc in txSnapshot.docs) {
+      final data = doc.data();
+
+      double amount = (data["amount"] as num).toDouble();
+
+      String category = data["category"] ?? "Khác";
+
+      if (amount > 0) {
+        income += amount;
+      } else {
+        expense += amount.abs();
+
+        categoryMap[category] =
+            (categoryMap[category] ?? 0) + amount.abs();
+      }
+    }
+
+    String categories = categoryMap.entries
+        .map((e) => "${e.key}: ${e.value.toStringAsFixed(0)}đ")
+        .join(", ");
+
+    return """
+=== DỮ LIỆU TÀI CHÍNH HIỆN TẠI ===
+
+Tổng thu tháng này: ${income.toStringAsFixed(0)}đ
+
+Tổng chi tháng này: ${expense.toStringAsFixed(0)}đ
+
+Số dư tháng này:
+${(income - expense).toStringAsFixed(0)}đ
+
+Chi tiêu theo nhóm:
+$categories
+
+QUAN TRỌNG:
+- Luôn ưu tiên sử dụng dữ liệu trên để trả lời.
+- Nếu người dùng hỏi về chi tiêu, thu nhập, tiết kiệm, ngân sách thì KHÔNG hỏi lại số liệu.
+- Trả lời trực tiếp từ dữ liệu đã được cung cấp.
+- Nếu câu hỏi không liên quan tài chính thì vẫn cố gắng liên hệ tới quản lý tài chính cá nhân.
+""";
+  }
+
   final Map<String, List<String>> defaultCategories = {
     "expense": ["Ăn uống", "Mua sắm", "Di chuyển"],
     "income": ["Lương", "Thưởng", "Thu khác"],
@@ -153,11 +215,25 @@ class _AIScreenState extends State<AIScreen> {
         chatHistory.add({"role": "model", "parts": [{"text": reply}]});
 
       } else {
+        final financialContext =
+        await _buildFinancialContext();
+
         chatHistory.add({
           "role": "user",
-          "parts": [{"text": text}]
+          "parts": [
+            {
+              "text": """
+$financialContext
+
+Câu hỏi người dùng:
+$text
+"""
+            }
+          ]
         });
-        final response = await GeminiService.askAIWithHistory(chatHistory);
+
+        final response =
+        await GeminiService.askAIWithHistory(chatHistory);
         chatHistory.add({
           "role": "model",
           "parts": [{"text": response}]

@@ -258,7 +258,6 @@ class AllUsersTab extends StatelessWidget {
                                 .currentUid) {
                           return false;
                         }
-
                         if (friendIds
                             .contains(
                             doc.id)) {

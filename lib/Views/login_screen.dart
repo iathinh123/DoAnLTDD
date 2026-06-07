@@ -7,7 +7,7 @@ import 'forgot_pass_screen.dart';
 import '../Controllers/language_provider.dart';
 import 'home_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'admin_screen.dart';
+import 'admin_view/admin_screen.dart';
 
 const Color moneyLoverGreen = Color(0xFF2DB15D);
 
@@ -47,34 +47,23 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       String uid = userCredential.user!.uid;
-      User? user = userCredential.user;
 
-      // =======================================================================
-      // XỬ LÝ ĐỒNG BỘ THÔNG TIN HIỂN THỊ LÊN FIRESTORE (KHÔNG ĐỔI CẤU TRÚC UID)
-      // =======================================================================
-      if (user != null) {
-        final userDoc = FirebaseFirestore.instance
-            .collection('NguoiDung')
-            .doc(user.uid);
-        await userDoc.set({
-          "email": user.email,
-          "name": user.displayName ??
-              user.email!.split('@')[0],
-          "avatarUrl": user.photoURL ?? "",
-          "role": "user",
-          "createdAt": FieldValue.serverTimestamp(),
-          "lastLogin": FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
-      // =======================================================================
-
-      // Đọc role từ Firestore
+      // Đọc role và trạng thái chặn từ Firestore
       var doc = await FirebaseFirestore.instance
           .collection('NguoiDung')
           .doc(uid)
           .get();
 
       String role = doc.data()?['role'] ?? 'user';
+      bool isBlocked = doc.data()?['isBlocked'] ?? false;
+
+      // Kiểm tra chặn
+      if (isBlocked || role == 'blocked') {
+        await FirebaseAuth.instance.signOut();
+        if (!mounted) return;
+        _showError("Tài khoản của bạn đã bị chặn bởi Admin!");
+        return;
+      }
 
       if (!mounted) return;
 
@@ -82,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (role == 'admin') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => AdminScreen()),
+          MaterialPageRoute(builder: (_) => const AdminScreen()),
         );
       } else {
         Navigator.pushReplacement(
@@ -110,20 +99,53 @@ class _LoginScreenState extends State<LoginScreen> {
       UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       User? user = userCredential.user;
 
-      // ĐỒNG BỘ THÔNG TIN KHI ĐĂNG NHẬP GOOGLE (LẤY ĐƯỢC TÊN THẬT TỪ GOOGLE)
       if (user != null) {
-        await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).set({
-          "email": user.email,
-          "name": user.displayName ?? user.email!.split('@')[0], // Ưu tiên lấy tên hiển thị của tài khoản Google
-          "avatarUrl": user.photoURL ?? "",
-          "role": "user",
-          "lastLogin": FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
-      // =======================================================================
+        var docSnapshot = await FirebaseFirestore.instance
+            .collection('NguoiDung')
+            .doc(user.uid)
+            .get();
 
-      if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+        if (docSnapshot.exists) {
+          var data = docSnapshot.data();
+          bool isBlocked = data?['isBlocked'] ?? false;
+          String role = data?['role'] ?? 'user';
+
+          if (isBlocked || role == 'blocked') {
+            await FirebaseAuth.instance.signOut();
+            await GoogleSignIn().signOut(); // Đăng xuất Google Session để lần sau có thể chọn lại tài khoản
+            if (!mounted) return;
+            _showError("Tài khoản của bạn đã bị chặn bởi Admin!");
+            return;
+          }
+        }
+
+        await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).update({
+          "name": user.displayName ?? user.email!.split('@')[0],
+          "avatarUrl": user.photoURL ?? "",
+          "lastLogin": FieldValue.serverTimestamp(),
+        }).catchError((error) async {
+          await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).set({
+            "uid": user.uid,
+            "email": user.email,
+            "name": user.displayName ?? user.email!.split('@')[0],
+            "avatarUrl": user.photoURL ?? "",
+            "role": "user",
+            "isBlocked": false,
+            "lastLogin": FieldValue.serverTimestamp(),
+          });
+        });
+
+        if (!mounted) return;
+
+        var finalDoc = await FirebaseFirestore.instance.collection('NguoiDung').doc(user.uid).get();
+        String currentRole = finalDoc.data()?['role'] ?? 'user';
+
+        if (currentRole == 'admin') {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminScreen()));
+        } else {
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+        }
+      }
     } catch (e) {
       _showError("Lỗi Google: $e");
     }
@@ -184,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     elevation: 5,
-                    shadowColor: moneyLoverGreen.withOpacity(0.3),
+                    shadowColor: moneyLoverGreen.withValues(alpha: 0.3),
                   ),
                   child: Text(lang.getText("login").toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
@@ -238,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: moneyLoverGreen.withOpacity(0.3)),
+        border: Border.all(color: moneyLoverGreen.withValues(alpha: 0.3)),
       ),
       child: TextField(
         controller: controller,
